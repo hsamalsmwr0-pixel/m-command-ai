@@ -6,10 +6,36 @@ type Message = {
   content: string;
 };
 
+type Goal = {
+  id: number;
+  title: string;
+  description: string;
+  progress: number;
+  status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
+};
+
 export default function AI() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const getGoals = (): Goal[] => {
+    try {
+      const savedGoals = localStorage.getItem('m-command-goals');
+
+      if (!savedGoals) {
+        return [];
+      }
+
+      const parsedGoals = JSON.parse(savedGoals);
+
+      return Array.isArray(parsedGoals)
+        ? parsedGoals
+        : [];
+    } catch {
+      return [];
+    }
+  };
 
   const sendMessage = async () => {
     const message = input.trim();
@@ -18,7 +44,8 @@ export default function AI() {
       return;
     }
 
-    // إضافة رسالة المستخدم إلى المحادثة
+    const goals = getGoals();
+
     setMessages((prev) => [
       ...prev,
       {
@@ -38,6 +65,7 @@ export default function AI() {
         },
         body: JSON.stringify({
           message,
+          goals,
         }),
       });
 
@@ -45,20 +73,21 @@ export default function AI() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.error || 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
+          data.error ||
+            'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
         );
       }
 
-      // إضافة رد M-Command AI إلى المحادثة
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
           content:
-            data.message || 'لم أتمكن من الحصول على إجابة.',
+            data.message ||
+            'لم أتمكن من الحصول على إجابة.',
         },
       ]);
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -85,13 +114,15 @@ export default function AI() {
       <section className="ai-page">
         <div className="ai-header">
           <div>
-            <span className="eyebrow">M-COMMAND AI</span>
+            <span className="eyebrow">
+              M-COMMAND AI
+            </span>
 
             <h1>مساعدك الذكي</h1>
 
             <p>
-              استخدم الذكاء الاصطناعي لتحليل أهدافك ومهامك ومشاريعك
-              وتنظيم عملك من مكان واحد.
+              استخدم الذكاء الاصطناعي لتحليل أهدافك
+              ومهامك ومشاريعك وتنظيم عملك من مكان واحد.
             </p>
           </div>
 
@@ -114,12 +145,15 @@ export default function AI() {
           <div className="ai-empty-state">
             {messages.length === 0 ? (
               <>
-                <div className="ai-large-icon">🤖</div>
+                <div className="ai-large-icon">
+                  🤖
+                </div>
 
                 <h2>كيف يمكنني مساعدتك؟</h2>
 
                 <p>
-                  ابدأ بسؤال عن أهدافك أو مهامك أو مشاريعك أو خطتك اليومية.
+                  ابدأ بسؤال عن أهدافك أو مهامك أو
+                  مشاريعك أو خطتك اليومية.
                 </p>
               </>
             ) : (
@@ -145,8 +179,13 @@ export default function AI() {
 
                 {loading && (
                   <div className="ai-message ai-message-assistant">
-                    <strong>M-Command AI</strong>
-                    <p>جاري تجهيز الإجابة...</p>
+                    <strong>
+                      M-Command AI
+                    </strong>
+
+                    <p>
+                      جاري تجهيز الإجابة...
+                    </p>
                   </div>
                 )}
               </div>
@@ -157,7 +196,9 @@ export default function AI() {
             <input
               type="text"
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
               onKeyDown={handleKeyDown}
               placeholder="اكتب سؤالك لـ M-Command AI..."
               disabled={loading}
@@ -166,7 +207,9 @@ export default function AI() {
             <button
               type="button"
               onClick={sendMessage}
-              disabled={loading || !input.trim()}
+              disabled={
+                loading || !input.trim()
+              }
             >
               {loading ? 'جاري...' : 'إرسال'}
             </button>
@@ -216,4 +259,4 @@ export default function AI() {
       </section>
     </main>
   );
-                    }
+                      }
