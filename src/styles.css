@@ -1353,3 +1353,126 @@ h1 {
     font-size: 16px;
   }
   }
+/* =========================
+   LEARNING PAGE
+========================= */
+
+.learning-form h2 {
+  margin: 0 0 25px;
+  font-size: 20px;
+}
+
+/* =========================
+   LEARNING GRID
+========================= */
+
+.learning-grid {
+  width: min(1200px, 90%);
+  margin: 0 auto;
+  padding-bottom: 80px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.learning-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #202838;
+  border-radius: 18px;
+  background: #10151f;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+
+.learning-card:hover {
+  transform: translateY(-3px);
+  border-color: #39455b;
+}
+
+.learning-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.learning-card-header h2 {
+  margin: 10px 0 0;
+  font-size: 18px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.learning-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid #2b3547;
+  border-radius: 8px;
+  background: #151b27;
+  color: #aeb8ca;
+  font-size: 11px;
+}
+
+.learning-description {
+  margin: 18px 0;
+  color: #8993a7;
+  line-height: 1.7;
+  font-size: 13px;
+}
+
+.learning-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 9px;
+  color: #8993a7;
+  font-size: 12px;
+}
+
+.learning-progress-info strong {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.learning-progress-slider {
+  width: 100%;
+  margin-top: 14px;
+  accent-color: #8993a7;
+}
+
+/* =========================
+   LEARNING MOBILE
+========================= */
+
+@media (max-width: 1000px) {
+  .learning-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .learning-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .learning-grid {
+    width: 90%;
+  }
+
+  .learning-card {
+    padding: 18px;
+  }
+
+  .learning-card-header {
+    gap: 10px;
+  }
+
+  .learning-card-header h2 {
+    font-size: 16px;
+  }
+}
