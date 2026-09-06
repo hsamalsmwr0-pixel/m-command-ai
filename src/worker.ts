@@ -3,6 +3,19 @@ export interface Env {
   AI: Ai;
 }
 
+type Goal = {
+  id?: number;
+  title?: string;
+  description?: string;
+  progress?: number;
+  status?: string;
+};
+
+type AIRequestBody = {
+  message?: string;
+  goals?: Goal[];
+};
+
 export default {
   async fetch(
     request: Request,
@@ -24,12 +37,18 @@ export default {
     // ================================
     // M-Command AI API
     // ================================
-    if (url.pathname === '/api/ai' && request.method === 'POST') {
+    if (
+      url.pathname === '/api/ai' &&
+      request.method === 'POST'
+    ) {
       try {
-        // قراءة البيانات القادمة من المستخدم
-        const body = await request.json<{ message?: string }>();
+        const body =
+          await request.json<AIRequestBody>();
 
         const message = body.message?.trim();
+        const goals = Array.isArray(body.goals)
+          ? body.goals
+          : [];
 
         // التحقق من وجود الرسالة
         if (!message) {
@@ -42,15 +61,82 @@ export default {
           );
         }
 
-        // تشغيل نموذج Workers AI
+        // ================================
+        // تجهيز بيانات الأهداف
+        // ================================
+
+        const goalsContext =
+          goals.length > 0
+            ? goals
+                .map(
+                  (goal, index) =>
+                    `${index + 1}. الهدف: ${
+                      goal.title || 'بدون اسم'
+                    }
+الوصف: ${
+                      goal.description ||
+                      'لا يوجد وصف'
+                    }
+التقدم: ${
+                      typeof goal.progress === 'number'
+                        ? `${goal.progress}%`
+                        : 'غير محدد'
+                    }
+الحالة: ${
+                      goal.status || 'غير محددة'
+                    }`
+                )
+                .join('\n\n')
+            : 'لا توجد أهداف مسجلة حاليًا.';
+
+        // ================================
+        // سياق M-Command AI
+        // ================================
+
+        const systemPrompt = `
+أنت M-Command AI، المساعد الذكي داخل منصة
+M-Command AI لإدارة الأهداف والمهام والمشاريع
+والتعلم والملاحظات.
+
+مهمتك أن تساعد المستخدم في اتخاذ قرارات عملية
+وتحليل بيانات مركز القيادة.
+
+بيانات أهداف المستخدم الحالية:
+
+${goalsContext}
+
+قواعد مهمة:
+
+1. عندما يسأل المستخدم عن أهدافه، استخدم البيانات
+   الموجودة أعلاه ولا تخترع أهدافًا غير موجودة.
+
+2. عندما يطلب تحليل أهدافه، حلل نسبة التقدم
+   والحالة والوصف الموجود لكل هدف.
+
+3. عندما لا توجد أهداف، أخبر المستخدم بوضوح
+   أنه لا توجد أهداف مسجلة حاليًا.
+
+4. لا تدّعي أنك ترى بيانات غير موجودة في السياق.
+
+5. أجب باللغة العربية بوضوح واختصار.
+
+6. اجعل النصائح عملية وقابلة للتنفيذ.
+
+7. إذا كان السؤال لا يتعلق بالأهداف، أجب عنه
+   بشكل طبيعي اعتمادًا على معرفتك العامة.
+`;
+
+        // ================================
+        // تشغيل Workers AI
+        // ================================
+
         const response = await env.AI.run(
           '@cf/zai-org/glm-4.7-flash',
           {
             messages: [
               {
                 role: 'system',
-                content:
-                  'أنت M-Command AI، مساعد ذكي لإدارة الأهداف والمهام والمشاريع والتعلم. أجب باللغة العربية بوضوح واختصار.',
+                content: systemPrompt,
               },
               {
                 role: 'user',
@@ -60,22 +146,33 @@ export default {
           }
         );
 
-        // استخراج النص النهائي فقط من إجابة النموذج
+        // ================================
+        // استخراج الإجابة
+        // ================================
+
         const answer =
           response?.choices?.[0]?.message?.content ||
           'لم أتمكن من الحصول على إجابة.';
 
-        // إرسال النص النهائي فقط إلى الواجهة
+        // ================================
+        // إرسال النتيجة
+        // ================================
+
         return Response.json({
           success: true,
           message: answer,
         });
       } catch (error) {
-        // التعامل مع أي خطأ في API أو Workers AI
+        console.error(
+          'M-Command AI Error:',
+          error
+        );
+
         return Response.json(
           {
             success: false,
-            error: 'حدث خطأ أثناء تشغيل الذكاء الاصطناعي.',
+            error:
+              'حدث خطأ أثناء تشغيل الذكاء الاصطناعي.',
           },
           { status: 500 }
         );
