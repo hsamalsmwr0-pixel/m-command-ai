@@ -1,6 +1,85 @@
+import { useState } from 'react';
 import '../styles.css';
 
+type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 export default function AI() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async () => {
+    const message = input.trim();
+
+    if (!message || loading) {
+      return;
+    }
+
+    // إضافة رسالة المستخدم إلى المحادثة
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'user',
+        content: message,
+      },
+    ]);
+
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
+        );
+      }
+
+      // إضافة رد M-Command AI إلى المحادثة
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            data.message || 'لم أتمكن من الحصول على إجابة.',
+        },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (event.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
   return (
     <main className="page">
       <section className="ai-page">
@@ -33,23 +112,63 @@ export default function AI() {
           </div>
 
           <div className="ai-empty-state">
-            <div className="ai-large-icon">🤖</div>
+            {messages.length === 0 ? (
+              <>
+                <div className="ai-large-icon">🤖</div>
 
-            <h2>كيف يمكنني مساعدتك؟</h2>
+                <h2>كيف يمكنني مساعدتك؟</h2>
 
-            <p>
-              ابدأ بسؤال عن أهدافك أو مهامك أو مشاريعك أو خطتك اليومية.
-            </p>
+                <p>
+                  ابدأ بسؤال عن أهدافك أو مهامك أو مشاريعك أو خطتك اليومية.
+                </p>
+              </>
+            ) : (
+              <div className="ai-messages">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`ai-message ${
+                      message.role === 'user'
+                        ? 'ai-message-user'
+                        : 'ai-message-assistant'
+                    }`}
+                  >
+                    <strong>
+                      {message.role === 'user'
+                        ? 'أنت'
+                        : 'M-Command AI'}
+                    </strong>
+
+                    <p>{message.content}</p>
+                  </div>
+                ))}
+
+                {loading && (
+                  <div className="ai-message ai-message-assistant">
+                    <strong>M-Command AI</strong>
+                    <p>جاري تجهيز الإجابة...</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ai-input-area">
             <input
               type="text"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="اكتب سؤالك لـ M-Command AI..."
+              disabled={loading}
             />
 
-            <button type="button">
-              إرسال
+            <button
+              type="button"
+              onClick={sendMessage}
+              disabled={loading || !input.trim()}
+            >
+              {loading ? 'جاري...' : 'إرسال'}
             </button>
           </div>
         </section>
@@ -97,4 +216,4 @@ export default function AI() {
       </section>
     </main>
   );
-}
+                    }
