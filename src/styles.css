@@ -1,7 +1,7 @@
 :root {
   font-family: Arial, sans-serif;
   color: #f5f7ff;
-  background: #0b0f19;
+  background: #080b12;
 }
 
 * {
@@ -11,53 +11,230 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #0b0f19;
+  background: #080b12;
 }
 
 button {
-  border: 0;
-  border-radius: 12px;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 700;
+  font: inherit;
   cursor: pointer;
-  background: #ffffff;
-  color: #0b0f19;
 }
 
 .app {
   min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, #172033 0, transparent 35%),
+    #080b12;
+}
+
+.topbar {
+  height: 76px;
+  padding: 0 6%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
+  justify-content: space-between;
+  border-bottom: 1px solid #202634;
+  background: rgba(8, 11, 18, 0.85);
 }
 
-.hero {
-  width: min(720px, 100%);
-  text-align: center;
-  padding: 48px 24px;
+.topbar strong {
+  display: block;
+  font-size: 20px;
 }
 
-.badge {
-  display: inline-block;
-  margin-bottom: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  opacity: 0.7;
+.topbar span {
+  display: block;
+  margin-top: 5px;
+  color: #8993a7;
+  font-size: 12px;
+}
+
+.status {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  color: #aeb8ca !important;
+  font-size: 13px !important;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 !important;
+  border-radius: 50%;
+  background: #55d68a;
+}
+
+.dashboard {
+  width: min(1200px, 90%);
+  margin: auto;
+  padding: 55px 0 80px;
+}
+
+.welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 35px;
+}
+
+.eyebrow {
+  color: #8792a8;
+  font-size: 12px;
+  letter-spacing: 3px;
 }
 
 h1 {
-  margin: 0 0 18px;
-  font-size: clamp(36px, 8vw, 64px);
-  line-height: 1.1;
+  margin: 10px 0;
+  font-size: clamp(36px, 6vw, 62px);
+  line-height: 1.05;
 }
 
-p {
-  margin: 0 auto 30px;
-  max-width: 600px;
-  font-size: 18px;
-  line-height: 1.8;
-  opacity: 0.72;
+.welcome p {
+  margin: 0;
+  color: #8f99ab;
+  font-size: 17px;
+}
+
+.ai-button,
+.open-button {
+  border: 1px solid #30394b;
+  border-radius: 12px;
+  background: #151b27;
+  color: #fff;
+  padding: 13px 18px;
+}
+
+.ai-button {
+  white-space: nowrap;
+}
+
+.ai-button:hover,
+.open-button:hover {
+  background: #202838;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 45px;
+}
+
+.stat-card,
+.module-card {
+  border: 1px solid #202838;
+  border-radius: 18px;
+  background: #10151f;
+}
+
+.stat-card {
+  padding: 22px;
+}
+
+.stat-card span {
+  font-size: 20px;
+}
+
+.stat-card small {
+  display: block;
+  margin: 15px 0 8px;
+  color: #8993a7;
+}
+
+.stat-card strong {
+  font-size: 28px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.section-title h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.section-title span {
+  color: #6f7a8f;
+  font-size: 12px;
+}
+
+.modules {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.module-card {
+  padding: 25px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.module-card:hover {
+  transform: translateY(-3px);
+  border-color: #39455b;
+}
+
+.module-icon {
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+
+.module-card h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.module-card p {
+  min-height: 45px;
+  margin: 0 0 20px;
+  color: #8993a7;
+  line-height: 1.6;
+}
+
+.open-button {
+  width: 100%;
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  .welcome {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modules {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 5%;
+  }
+
+  .dashboard {
+    width: 90%;
+    padding-top: 35px;
+  }
+
+  .status {
+    display: none !important;
+  }
+
+  .stats {
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 17px;
+  }
 }
