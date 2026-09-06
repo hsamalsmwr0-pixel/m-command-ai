@@ -14,6 +14,14 @@ type Goal = {
   status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
 };
 
+type Task = {
+  id: number;
+  title: string;
+  description: string;
+  priority: string;
+  completed: boolean;
+};
+
 export default function AI() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -37,6 +45,24 @@ export default function AI() {
     }
   };
 
+  const getTasks = (): Task[] => {
+    try {
+      const savedTasks = localStorage.getItem('m-command-tasks');
+
+      if (!savedTasks) {
+        return [];
+      }
+
+      const parsedTasks = JSON.parse(savedTasks);
+
+      return Array.isArray(parsedTasks)
+        ? parsedTasks
+        : [];
+    } catch {
+      return [];
+    }
+  };
+
   const sendMessage = async () => {
     const message = input.trim();
 
@@ -45,6 +71,7 @@ export default function AI() {
     }
 
     const goals = getGoals();
+    const tasks = getTasks();
 
     setMessages((prev) => [
       ...prev,
@@ -66,6 +93,7 @@ export default function AI() {
         body: JSON.stringify({
           message,
           goals,
+          tasks,
         }),
       });
 
@@ -259,4 +287,4 @@ export default function AI() {
       </section>
     </main>
   );
-                      }
+                               }
