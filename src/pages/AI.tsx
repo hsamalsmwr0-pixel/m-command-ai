@@ -22,6 +22,14 @@ type Task = {
   completed: boolean;
 };
 
+type Project = {
+  id: number;
+  title: string;
+  description: string;
+  progress: number;
+  status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
+};
+
 export default function AI() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,7 +37,9 @@ export default function AI() {
 
   const getGoals = (): Goal[] => {
     try {
-      const savedGoals = localStorage.getItem('m-command-goals');
+      const savedGoals = localStorage.getItem(
+        'm-command-goals'
+      );
 
       if (!savedGoals) {
         return [];
@@ -47,7 +57,9 @@ export default function AI() {
 
   const getTasks = (): Task[] => {
     try {
-      const savedTasks = localStorage.getItem('m-command-tasks');
+      const savedTasks = localStorage.getItem(
+        'm-command-tasks'
+      );
 
       if (!savedTasks) {
         return [];
@@ -63,6 +75,27 @@ export default function AI() {
     }
   };
 
+  const getProjects = (): Project[] => {
+    try {
+      const savedProjects = localStorage.getItem(
+        'm-command-projects'
+      );
+
+      if (!savedProjects) {
+        return [];
+      }
+
+      const parsedProjects =
+        JSON.parse(savedProjects);
+
+      return Array.isArray(parsedProjects)
+        ? parsedProjects
+        : [];
+    } catch {
+      return [];
+    }
+  };
+
   const sendMessage = async () => {
     const message = input.trim();
 
@@ -72,6 +105,7 @@ export default function AI() {
 
     const goals = getGoals();
     const tasks = getTasks();
+    const projects = getProjects();
 
     setMessages((prev) => [
       ...prev,
@@ -94,6 +128,7 @@ export default function AI() {
           message,
           goals,
           tasks,
+          projects,
         }),
       });
 
@@ -287,4 +322,4 @@ export default function AI() {
       </section>
     </main>
   );
-                               }
+    }
