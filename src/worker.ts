@@ -11,9 +11,19 @@ type Goal = {
   status?: string;
 };
 
+type Task = {
+  id?: number;
+  title?: string;
+  description?: string;
+  priority?: string;
+  completed?: boolean;
+  status?: string;
+};
+
 type AIRequestBody = {
   message?: string;
   goals?: Goal[];
+  tasks?: Task[];
 };
 
 export default {
@@ -23,10 +33,6 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
-    // ================================
-    // API Health Check
-    // ================================
-
     if (url.pathname === '/api/health') {
       return Response.json({
         status: 'ok',
@@ -34,10 +40,6 @@ export default {
         workers_ai: 'connected',
       });
     }
-
-    // ================================
-    // M-Command AI API
-    // ================================
 
     if (
       url.pathname === '/api/ai' &&
@@ -53,9 +55,9 @@ export default {
           ? body.goals
           : [];
 
-        // ================================
-        // التحقق من الرسالة
-        // ================================
+        const tasks = Array.isArray(body.tasks)
+          ? body.tasks
+          : [];
 
         if (!message) {
           return Response.json(
@@ -67,93 +69,120 @@ export default {
           );
         }
 
-        // ================================
-        // تجهيز بيانات الأهداف
-        // ================================
-
-        let goalsContext =
-          'لا توجد أهداف مسجلة حاليًا.';
-
-        if (goals.length > 0) {
-          goalsContext = goals
-            .map(
-              (goal, index) => {
-                return `
-الهدف ${index + 1}:
-الاسم: ${goal.title || 'بدون اسم'}
+        const goalsContext =
+          goals.length > 0
+            ? goals
+                .map(
+                  (goal, index) =>
+                    `${index + 1}. الهدف: ${
+                      goal.title || 'بدون اسم'
+                    }
 الوصف: ${
-                  goal.description ||
-                  'لا يوجد وصف'
-                }
+                      goal.description ||
+                      'لا يوجد وصف'
+                    }
 التقدم: ${
-                  typeof goal.progress === 'number'
-                    ? `${goal.progress}%`
-                    : 'غير محدد'
-                }
+                      typeof goal.progress === 'number'
+                        ? `${goal.progress}%`
+                        : 'غير محدد'
+                    }
 الحالة: ${
-                  goal.status || 'غير محددة'
-                }
-`;
-              }
-            )
-            .join('\n');
-        }
+                      goal.status || 'غير محددة'
+                    }`
+                )
+                .join('\n\n')
+            : 'لا توجد أهداف مسجلة حاليًا.';
 
-        // ================================
-        // System Prompt
-        // ================================
+        const tasksContext =
+          tasks.length > 0
+            ? tasks
+                .map(
+                  (task, index) =>
+                    `${index + 1}. المهمة: ${
+                      task.title || 'بدون اسم'
+                    }
+الوصف: ${
+                      task.description ||
+                      'لا يوجد وصف'
+                    }
+الأولوية: ${
+                      task.priority || 'غير محددة'
+                    }
+الحالة: ${
+                      typeof task.completed === 'boolean'
+                        ? task.completed
+                          ? 'مكتملة'
+                          : 'غير مكتملة'
+                        : task.status ||
+                          'غير محددة'
+                    }`
+                )
+                .join('\n\n')
+            : 'لا توجد مهام مسجلة حاليًا.';
 
         const systemPrompt = `
 أنت M-Command AI، المساعد الذكي داخل منصة
-M-Command AI.
+M-Command AI لإدارة الأهداف والمهام والمشاريع
+والتعلم والملاحظات.
 
-أنت متخصص في إدارة وتحليل:
-- الأهداف
-- المهام
-- المشاريع
-- التعلم
-- الملاحظات
+مهمتك أن تساعد المستخدم في اتخاذ قرارات عملية
+وتحليل بيانات مركز القيادة.
 
-بيانات أهداف المستخدم الحالية:
+====================
+أهداف المستخدم
+====================
 
 ${goalsContext}
 
-قواعد العمل:
+====================
+مهام المستخدم
+====================
 
-1. إذا سأل المستخدم عن أهدافه، استخدم البيانات
-   الموجودة في "بيانات أهداف المستخدم الحالية".
+${tasksContext}
 
-2. لا تخترع أي هدف غير موجود في البيانات.
+====================
+القواعد
+====================
 
-3. إذا كانت هناك أهداف، اذكر أسماءها وحالتها
-   ونسبة تقدمها عند الحاجة.
+1. عندما يسأل المستخدم عن أهدافه، استخدم بيانات
+الأهداف الموجودة أعلاه فقط.
 
-4. إذا لم توجد أهداف، أخبر المستخدم أنه لا توجد
-   أهداف مسجلة حاليًا.
+2. عندما يسأل المستخدم عن مهامه، استخدم بيانات
+المهام الموجودة أعلاه فقط.
 
-5. إذا طلب المستخدم تحليل أهدافه، قدم تحليلًا
-   عمليًا ومختصرًا.
+3. لا تخترع أهدافًا أو مهامًا غير موجودة.
 
-6. إذا كان السؤال لا يتعلق بالأهداف، أجب بشكل
-   طبيعي اعتمادًا على معرفتك.
+4. عندما لا توجد أهداف، أخبر المستخدم بوضوح
+أنه لا توجد أهداف مسجلة حاليًا.
 
-7. أجب باللغة العربية.
+5. عندما لا توجد مهام، أخبر المستخدم بوضوح
+أنه لا توجد مهام مسجلة حاليًا.
 
-8. لا تقل إنك لا تستطيع الوصول إلى بيانات المستخدم
-   إذا كانت البيانات موجودة في السياق أعلاه.
+6. عندما يطلب المستخدم تحليل أهدافه، حلل الاسم
+والوصف والتقدم والحالة.
 
-9. لا تذكر تفاصيل تقنية مثل localStorage أو API
-   أو Worker للمستخدم.
+7. عندما يطلب المستخدم تحليل مهامه، حلل المهمة
+والوصف والأولوية والحالة.
 
-رسالة المستخدم:
-${message}
+8. لا تدّعي أنك ترى بيانات غير موجودة في السياق.
+
+9. إذا كان السؤال لا يتعلق بالأهداف أو المهام،
+أجب عنه بشكل طبيعي اعتمادًا على معرفتك العامة.
+
+10. أجب باللغة العربية بوضوح واختصار.
+
+11. اجعل النصائح عملية وقابلة للتنفيذ.
+
+12. إذا سأل المستخدم "ما هي أهدافي ومهامي"،
+اعرض الأهداف والمهام المسجلة بشكل منظم.
+
+13. لا تخلط بين الأهداف والمهام.
+
+14. لا تغير أو تعدل بيانات المستخدم. أنت تقوم
+بالتحليل والإجابة فقط.
 `;
 
-        // ================================
-        // تشغيل Workers AI
-        // ================================
-
-        const response = await env.AI.run(
+        const aiResponse = await env.AI.run(
           '@cf/zai-org/glm-4.7-flash',
           {
             messages: [
@@ -169,61 +198,52 @@ ${message}
           }
         );
 
-        // ================================
-        // استخراج إجابة النموذج
-        // ================================
+        const responseData =
+          aiResponse as any;
 
         let answer = '';
 
-        const aiResponse =
-          response as any;
+        const content =
+          responseData?.choices?.[0]?.message
+            ?.content;
 
-        // الصيغة الأولى
+        if (typeof content === 'string') {
+          answer = content;
+        } else if (Array.isArray(content)) {
+          answer = content
+            .map((part: any) =>
+              typeof part === 'string'
+                ? part
+                : part?.text || ''
+            )
+            .join('');
+        }
+
+        if (!answer && typeof responseData?.response === 'string') {
+          answer = responseData.response;
+        }
+
         if (
-          aiResponse?.choices?.[0]?.message?.content
+          !answer &&
+          typeof responseData?.choices?.[0]?.text ===
+            'string'
         ) {
           answer =
-            aiResponse.choices[0].message.content;
-        }
-
-        // صيغة بديلة
-        else if (aiResponse?.response) {
-          answer = aiResponse.response;
-        }
-
-        // صيغة بديلة أخرى
-        else if (
-          aiResponse?.choices?.[0]?.text
-        ) {
-          answer =
-            aiResponse.choices[0].text;
-        }
-
-        // التأكد من أن الإجابة نص
-        if (typeof answer !== 'string') {
-          answer = String(answer || '');
+            responseData.choices[0].text;
         }
 
         answer = answer.trim();
-
-        // ================================
-        // التحقق النهائي
-        // ================================
 
         if (!answer) {
           return Response.json(
             {
               success: false,
               error:
-                'لم يتمكن النموذج من إنتاج إجابة.',
+                'تم الاتصال بالذكاء الاصطناعي ولكن لم يتم استلام إجابة.',
             },
             { status: 502 }
           );
         }
-
-        // ================================
-        // إرسال الإجابة
-        // ================================
 
         return Response.json({
           success: true,
@@ -245,10 +265,6 @@ ${message}
         );
       }
     }
-
-    // ================================
-    // React / Static Assets
-    // ================================
 
     return env.ASSETS.fetch(request);
   },
