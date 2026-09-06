@@ -1,35 +1,42 @@
 import '../styles.css';
+import { Link } from 'react-router-dom';
 
 const modules = [
   {
     icon: '🎯',
     title: 'الأهداف',
     text: 'خطط أهدافك وتابع تقدمك.',
+    path: '/goals',
   },
   {
     icon: '✓',
     title: 'المهام',
     text: 'نظّم أولوياتك اليومية.',
+    path: '/tasks',
   },
   {
     icon: '🚀',
     title: 'المشاريع',
     text: 'أدر مشاريعك من مكان واحد.',
+    path: '/projects',
   },
   {
     icon: '📝',
     title: 'الملاحظات',
     text: 'احفظ أفكارك ومعلوماتك.',
+    path: '/notes',
   },
   {
     icon: '📚',
     title: 'التعلّم',
     text: 'تابع مسارك التعليمي.',
+    path: '/learning',
   },
   {
     icon: '🤖',
     title: 'AI Assistant',
     text: 'مساعد ذكي يفهم بياناتك.',
+    path: '/ai',
   },
 ];
 
@@ -47,9 +54,9 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <button className="ai-button">
+        <Link to="/ai" className="ai-button">
           🤖 اسأل M-Command AI
-        </button>
+        </Link>
       </section>
 
       <section className="stats">
@@ -98,9 +105,12 @@ export default function Dashboard() {
 
               <p>{module.text}</p>
 
-              <button className="open-button">
+              <Link
+                to={module.path}
+                className="open-button"
+              >
                 فتح الوحدة →
-              </button>
+              </Link>
             </article>
           ))}
         </div>
