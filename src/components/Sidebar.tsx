@@ -1,12 +1,14 @@
+import { NavLink } from 'react-router-dom';
+
 export default function Sidebar() {
   const items = [
-    { icon: '⌂', label: 'لوحة التحكم' },
-    { icon: '🎯', label: 'الأهداف' },
-    { icon: '✓', label: 'المهام' },
-    { icon: '🚀', label: 'المشاريع' },
-    { icon: '📝', label: 'الملاحظات' },
-    { icon: '📚', label: 'التعلّم' },
-    { icon: '🤖', label: 'M-Command AI' },
+    { path: '/', icon: '⌂', label: 'لوحة التحكم' },
+    { path: '/goals', icon: '🎯', label: 'الأهداف' },
+    { path: '/tasks', icon: '✓', label: 'المهام' },
+    { path: '/projects', icon: '🚀', label: 'المشاريع' },
+    { path: '/notes', icon: '📝', label: 'الملاحظات' },
+    { path: '/learning', icon: '📚', label: 'التعلّم' },
+    { path: '/ai', icon: '🤖', label: 'M-Command AI' },
   ];
 
   return (
@@ -20,14 +22,17 @@ export default function Sidebar() {
       </div>
 
       <nav>
-        {items.map((item, index) => (
-          <button
-            key={item.label}
-            className={`sidebar-item ${index === 0 ? 'active' : ''}`}
+        {items.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `sidebar-item ${isActive ? 'active' : ''}`
+            }
           >
             <span>{item.icon}</span>
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
     </aside>
