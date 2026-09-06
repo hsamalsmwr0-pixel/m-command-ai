@@ -193,3 +193,5 @@ Build the foundation first.
 Do not rush into advanced features.
 
 Every major system component should be modular, testable, maintainable, and replaceable without requiring a complete rewrite of the application.
+
+
