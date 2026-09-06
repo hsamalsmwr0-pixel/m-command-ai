@@ -1,5 +1,6 @@
 import '../styles.css';
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 const modules = [
   {
@@ -40,12 +41,64 @@ const modules = [
   },
 ];
 
+function getStoredCount(key: string) {
+  try {
+    const savedData = localStorage.getItem(key);
+
+    if (!savedData) {
+      return 0;
+    }
+
+    const parsedData = JSON.parse(savedData);
+
+    return Array.isArray(parsedData)
+      ? parsedData.length
+      : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    goals: 0,
+    tasks: 0,
+    projects: 0,
+    learning: 0,
+  });
+
+  useEffect(() => {
+    const updateStats = () => {
+      setStats({
+        goals: getStoredCount('m-command-goals'),
+        tasks: getStoredCount('m-command-tasks'),
+        projects: getStoredCount('m-command-projects'),
+        learning: getStoredCount('m-command-learning'),
+      });
+    };
+
+    updateStats();
+
+    window.addEventListener(
+      'storage',
+      updateStats
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        updateStats
+      );
+    };
+  }, []);
+
   return (
     <main className="dashboard">
       <section className="welcome">
         <div>
-          <span className="eyebrow">COMMAND CENTER</span>
+          <span className="eyebrow">
+            COMMAND CENTER
+          </span>
 
           <h1>مركز قيادتك الذكي</h1>
 
@@ -54,7 +107,10 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Link to="/ai" className="ai-button">
+        <Link
+          to="/ai"
+          className="ai-button"
+        >
           🤖 اسأل M-Command AI
         </Link>
       </section>
@@ -63,32 +119,32 @@ export default function Dashboard() {
         <div className="stat-card">
           <span>🎯</span>
           <small>الأهداف النشطة</small>
-          <strong>0</strong>
+          <strong>{stats.goals}</strong>
         </div>
 
         <div className="stat-card">
           <span>✓</span>
           <small>المهام اليوم</small>
-          <strong>0</strong>
+          <strong>{stats.tasks}</strong>
         </div>
 
         <div className="stat-card">
           <span>🚀</span>
           <small>المشاريع</small>
-          <strong>0</strong>
+          <strong>{stats.projects}</strong>
         </div>
 
         <div className="stat-card">
           <span>📚</span>
           <small>مسارات التعلم</small>
-          <strong>0</strong>
+          <strong>{stats.learning}</strong>
         </div>
       </section>
 
       <section>
         <div className="section-title">
           <h2>وحدات مركز القيادة</h2>
-          <span>V1.0</span>
+          <span>V1.1</span>
         </div>
 
         <div className="modules">
@@ -117,4 +173,4 @@ export default function Dashboard() {
       </section>
     </main>
   );
-}
+      }
