@@ -26,6 +26,10 @@ button {
     #080b12;
 }
 
+/* =========================
+   TOP BAR
+========================= */
+
 .topbar {
   height: 76px;
   padding: 0 6%;
@@ -64,6 +68,111 @@ button {
   background: #55d68a;
 }
 
+/* =========================
+   APP LAYOUT
+========================= */
+
+.app-layout {
+  min-height: calc(100vh - 76px);
+  display: flex;
+  direction: rtl;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 250px;
+  min-height: calc(100vh - 76px);
+  flex-shrink: 0;
+  padding: 24px 16px;
+  border-left: 1px solid #202838;
+  background: #0d121b;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  margin-bottom: 32px;
+}
+
+.sidebar-brand > strong {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #080b12;
+  font-size: 20px;
+}
+
+.sidebar-brand b,
+.sidebar-brand span {
+  display: block;
+}
+
+.sidebar-brand b {
+  font-size: 14px;
+}
+
+.sidebar-brand span {
+  margin-top: 4px;
+  color: #707b8f;
+  font-size: 11px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: #8993a7;
+  text-align: right;
+}
+
+.sidebar-item:hover {
+  background: #151b27;
+  color: #ffffff;
+}
+
+.sidebar-item.active {
+  background: #1a2230;
+  border-color: #2b3547;
+  color: #ffffff;
+}
+
+.sidebar-item > span {
+  width: 22px;
+  text-align: center;
+}
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main-content {
+  min-width: 0;
+  flex: 1;
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
 .dashboard {
   width: min(1200px, 90%);
   margin: auto;
@@ -96,6 +205,10 @@ h1 {
   font-size: 17px;
 }
 
+/* =========================
+   BUTTONS
+========================= */
+
 .ai-button,
 .open-button {
   border: 1px solid #30394b;
@@ -113,6 +226,10 @@ h1 {
 .open-button:hover {
   background: #202838;
 }
+
+/* =========================
+   STATS
+========================= */
 
 .stats {
   display: grid;
@@ -146,6 +263,10 @@ h1 {
   font-size: 28px;
 }
 
+/* =========================
+   SECTION TITLE
+========================= */
+
 .section-title {
   display: flex;
   align-items: center;
@@ -163,6 +284,10 @@ h1 {
   font-size: 12px;
 }
 
+/* =========================
+   MODULES
+========================= */
+
 .modules {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -171,7 +296,9 @@ h1 {
 
 .module-card {
   padding: 25px;
-  transition: transform 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
 }
 
 .module-card:hover {
@@ -201,10 +328,13 @@ h1 {
   font-size: 13px;
 }
 
-@media (max-width: 800px) {
-  .welcome {
-    align-items: flex-start;
-    flex-direction: column;
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 1000px) {
+  .sidebar {
+    width: 220px;
   }
 
   .stats {
@@ -212,9 +342,48 @@ h1 {
   }
 
   .modules {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 800px) {
+  .app-layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    border-left: 0;
+    border-bottom: 1px solid #202838;
+  }
+
+  .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .main-content {
+    width: 100%;
+  }
+
+  .welcome {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .modules {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   SMALL MOBILE
+========================= */
 
 @media (max-width: 480px) {
   .topbar {
@@ -236,5 +405,18 @@ h1 {
 
   .stat-card {
     padding: 17px;
+  }
+
+  .sidebar {
+    padding: 18px 12px;
+  }
+
+  .sidebar nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sidebar-item {
+    padding: 11px 10px;
+    font-size: 13px;
   }
 }
