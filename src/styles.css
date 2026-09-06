@@ -2328,3 +2328,186 @@ body {
     margin-top: 14px;
   }
   }
+/* =====================================================
+   M-COMMAND AI — SIDEBAR COMMAND CENTER
+===================================================== */
+
+.sidebar {
+  position: relative;
+}
+
+/* =========================
+   SECTION LABEL
+========================= */
+
+.sidebar-section-label {
+  position: relative;
+  z-index: 1;
+  margin: 0 8px 12px;
+  color: #52647a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+}
+
+/* =========================
+   NAV ITEM
+========================= */
+
+.sidebar-item {
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+/* خط داخلي متحرك */
+.sidebar-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(125, 211, 252, 0.05)
+    );
+  transition: right 0.25s ease;
+  pointer-events: none;
+}
+
+.sidebar-item:hover::before,
+.sidebar-item.active::before {
+  right: 0;
+}
+
+/* =========================
+   ITEM CONTENT
+========================= */
+
+.sidebar-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-item-content strong {
+  display: block;
+  overflow: hidden;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   ARROW
+========================= */
+
+.sidebar-item-arrow {
+  color: #3f5065;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-item:hover .sidebar-item-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: #7dd3fc;
+}
+
+.sidebar-item.active .sidebar-item-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: #7dd3fc;
+}
+
+/* =========================
+   SYSTEM CARD
+========================= */
+
+.sidebar-system {
+  position: absolute;
+  right: 14px;
+  left: 14px;
+  bottom: 18px;
+  z-index: 2;
+  padding: 14px;
+  border: 1px solid #1d3043;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(14, 25, 39, 0.96),
+      rgba(7, 13, 22, 0.98)
+    );
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar-system-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b9c9da;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.sidebar-system-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #55d68a;
+  box-shadow:
+    0 0 12px rgba(85, 214, 138, 0.55);
+}
+
+.sidebar-system-text {
+  margin-top: 7px;
+  color: #53657a;
+  font-size: 9px;
+}
+
+/* =========================
+   DESKTOP
+========================= */
+
+@media (min-width: 801px) {
+  .sidebar {
+    padding-bottom: 105px;
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 800px) {
+  .sidebar {
+    padding-bottom: 18px;
+  }
+
+  .sidebar-section-label {
+    margin-top: 4px;
+  }
+
+  .sidebar-system {
+    position: static;
+    margin-top: 14px;
+  }
+
+  .sidebar-item-arrow {
+    display: none;
+  }
+}
