@@ -10,6 +10,9 @@ export default {
   ): Promise<Response> {
     const url = new URL(request.url);
 
+    // ================================
+    // API Health Check
+    // ================================
     if (url.pathname === '/api/health') {
       return Response.json({
         status: 'ok',
@@ -18,21 +21,28 @@ export default {
       });
     }
 
+    // ================================
+    // M-Command AI API
+    // ================================
     if (url.pathname === '/api/ai' && request.method === 'POST') {
       try {
+        // قراءة البيانات القادمة من المستخدم
         const body = await request.json<{ message?: string }>();
 
         const message = body.message?.trim();
 
+        // التحقق من وجود الرسالة
         if (!message) {
           return Response.json(
             {
+              success: false,
               error: 'الرسالة مطلوبة',
             },
             { status: 400 }
           );
         }
 
+        // تشغيل نموذج Workers AI
         const response = await env.AI.run(
           '@cf/zai-org/glm-4.7-flash',
           {
@@ -50,11 +60,18 @@ export default {
           }
         );
 
+        // استخراج النص النهائي فقط من إجابة النموذج
+        const answer =
+          response?.choices?.[0]?.message?.content ||
+          'لم أتمكن من الحصول على إجابة.';
+
+        // إرسال النص النهائي فقط إلى الواجهة
         return Response.json({
           success: true,
-          response,
+          message: answer,
         });
       } catch (error) {
+        // التعامل مع أي خطأ في API أو Workers AI
         return Response.json(
           {
             success: false,
@@ -65,6 +82,9 @@ export default {
       }
     }
 
+    // ================================
+    // Static Assets / React Application
+    // ================================
     return env.ASSETS.fetch(request);
   },
 };
