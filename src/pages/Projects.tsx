@@ -1,288 +1,325 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import '../styles.css';
 
-type ProjectStatus =
-  | 'قيد التنفيذ'
-  | 'مكتمل'
-  | 'متوقف';
+type Message = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+type Goal = {
+  id: number;
+  title: string;
+  description: string;
+  progress: number;
+  status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
+};
+
+type Task = {
+  id: number;
+  title: string;
+  description: string;
+  priority: string;
+  completed: boolean;
+};
 
 type Project = {
   id: number;
   title: string;
   description: string;
   progress: number;
-  status: ProjectStatus;
+  status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
 };
 
-const STORAGE_KEY = 'm-command-projects';
+export default function AI() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
 
-export default function Projects() {
-  const [projects, setProjects] = useState<Project[]>(() => {
+  const getGoals = (): Goal[] => {
     try {
-      const savedProjects =
-        localStorage.getItem(STORAGE_KEY);
+      const savedGoals = localStorage.getItem(
+        'm-command-goals'
+      );
 
-      return savedProjects
-        ? JSON.parse(savedProjects)
+      if (!savedGoals) {
+        return [];
+      }
+
+      const parsedGoals = JSON.parse(savedGoals);
+
+      return Array.isArray(parsedGoals)
+        ? parsedGoals
         : [];
     } catch {
       return [];
     }
-  });
+  };
 
-  const [showForm, setShowForm] = useState(false);
+  const getTasks = (): Task[] => {
+    try {
+      const savedTasks = localStorage.getItem(
+        'm-command-tasks'
+      );
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [progress, setProgress] = useState(0);
+      if (!savedTasks) {
+        return [];
+      }
 
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(projects)
-    );
-  }, [projects]);
+      const parsedTasks = JSON.parse(savedTasks);
 
-  const addProject = () => {
-    const cleanTitle = title.trim();
+      return Array.isArray(parsedTasks)
+        ? parsedTasks
+        : [];
+    } catch {
+      return [];
+    }
+  };
 
-    if (!cleanTitle) {
+  const getProjects = (): Project[] => {
+    try {
+      const savedProjects = localStorage.getItem(
+        'm-command-projects'
+      );
+
+      if (!savedProjects) {
+        return [];
+      }
+
+      const parsedProjects =
+        JSON.parse(savedProjects);
+
+      return Array.isArray(parsedProjects)
+        ? parsedProjects
+        : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const sendMessage = async () => {
+    const message = input.trim();
+
+    if (!message || loading) {
       return;
     }
 
-    const newProject: Project = {
-      id: Date.now(),
-      title: cleanTitle,
-      description: description.trim(),
-      progress,
-      status:
-        progress >= 100
-          ? 'مكتمل'
-          : 'قيد التنفيذ',
-    };
+    const goals = getGoals();
+    const tasks = getTasks();
+    const projects = getProjects();
 
-    setProjects((currentProjects) => [
-      ...currentProjects,
-      newProject,
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'user',
+        content: message,
+      },
     ]);
 
-    setTitle('');
-    setDescription('');
-    setProgress(0);
-    setShowForm(false);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          goals,
+          tasks,
+          projects,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error ||
+            'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
+        );
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            data.message ||
+            'لم أتمكن من الحصول على إجابة.',
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteProject = (id: number) => {
-    setProjects((currentProjects) =>
-      currentProjects.filter(
-        (project) => project.id !== id
-      )
-    );
-  };
-
-  const updateProgress = (
-    id: number,
-    value: number
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    const newProgress = Math.min(
-      100,
-      Math.max(0, value)
-    );
-
-    setProjects((currentProjects) =>
-      currentProjects.map((project) =>
-        project.id === id
-          ? {
-              ...project,
-              progress: newProgress,
-              status:
-                newProgress >= 100
-                  ? 'مكتمل'
-                  : 'قيد التنفيذ',
-            }
-          : project
-      )
-    );
+    if (event.key === 'Enter') {
+      sendMessage();
+    }
   };
 
   return (
     <main className="page">
-      <section className="page-header">
-        <div>
-          <span className="eyebrow">
-            PROJECTS
-          </span>
+      <section className="ai-page">
+        <div className="ai-header">
+          <div>
+            <span className="eyebrow">
+              M-COMMAND AI
+            </span>
 
-          <h1>المشاريع</h1>
+            <h1>مساعدك الذكي</h1>
 
-          <p>
-            إدارة مشاريعك ومتابعة مراحل التنفيذ.
-          </p>
+            <p>
+              استخدم الذكاء الاصطناعي لتحليل أهدافك
+              ومهامك ومشاريعك وتنظيم عملك من مكان واحد.
+            </p>
+          </div>
+
+          <div className="ai-status">
+            <span className="status-dot"></span>
+            AI جاهز
+          </div>
         </div>
 
-        <button
-          type="button"
-          className="primary-button"
-          onClick={() =>
-            setShowForm(!showForm)
-          }
-        >
-          {showForm
-            ? 'إلغاء'
-            : '+ مشروع جديد'}
-        </button>
-      </section>
+        <section className="ai-chat-card">
+          <div className="ai-chat-header">
+            <div className="ai-avatar">🤖</div>
 
-      {showForm && (
-        <section className="panel project-form">
-          <h2>إضافة مشروع جديد</h2>
-
-          <div className="form-group">
-            <label htmlFor="project-title">
-              اسم المشروع
-            </label>
-
-            <input
-              id="project-title"
-              type="text"
-              value={title}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
-              placeholder="مثال: إطلاق متجر إلكتروني"
-            />
+            <div>
+              <strong>M-Command AI</strong>
+              <span>مساعد مركز القيادة</span>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="project-description">
-              وصف المشروع
-            </label>
-
-            <textarea
-              id="project-description"
-              value={description}
-              onChange={(event) =>
-                setDescription(event.target.value)
-              }
-              placeholder="اكتب وصفًا مختصرًا للمشروع..."
-              rows={4}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="project-progress">
-              نسبة التقدم: {progress}%
-            </label>
-
-            <input
-              id="project-progress"
-              type="range"
-              min="0"
-              max="100"
-              value={progress}
-              onChange={(event) =>
-                setProgress(
-                  Number(event.target.value)
-                )
-              }
-            />
-          </div>
-
-          <button
-            type="button"
-            className="primary-button"
-            onClick={addProject}
-          >
-            حفظ المشروع
-          </button>
-        </section>
-      )}
-
-      {projects.length === 0 ? (
-        <section className="empty-state">
-          <div className="empty-icon">
-            🚀
-          </div>
-
-          <h2>
-            لا توجد مشاريع حتى الآن
-          </h2>
-
-          <p>
-            أضف أول مشروع وابدأ بمتابعة مراحل
-            التنفيذ من مركز القيادة.
-          </p>
-        </section>
-      ) : (
-        <section className="projects-grid">
-          {projects.map((project) => (
-            <article
-              className="project-card"
-              key={project.id}
-            >
-              <div className="project-card-header">
-                <div>
-                  <span className="project-status">
-                    {project.status}
-                  </span>
-
-                  <h2>
-                    {project.title}
-                  </h2>
+          <div className="ai-empty-state">
+            {messages.length === 0 ? (
+              <>
+                <div className="ai-large-icon">
+                  🤖
                 </div>
 
-                <button
-                  type="button"
-                  className="delete-button"
-                  onClick={() =>
-                    deleteProject(project.id)
-                  }
-                  aria-label={`حذف المشروع ${project.title}`}
-                >
-                  حذف
-                </button>
-              </div>
+                <h2>كيف يمكنني مساعدتك؟</h2>
 
-              {project.description && (
-                <p className="project-description">
-                  {project.description}
+                <p>
+                  ابدأ بسؤال عن أهدافك أو مهامك أو
+                  مشاريعك أو خطتك اليومية.
                 </p>
-              )}
+              </>
+            ) : (
+              <div className="ai-messages">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`ai-message ${
+                      message.role === 'user'
+                        ? 'ai-message-user'
+                        : 'ai-message-assistant'
+                    }`}
+                  >
+                    <strong>
+                      {message.role === 'user'
+                        ? 'أنت'
+                        : 'M-Command AI'}
+                    </strong>
 
-              <div className="project-progress-info">
-                <span>التقدم</span>
+                    <p>{message.content}</p>
+                  </div>
+                ))}
 
-                <strong>
-                  {project.progress}%
-                </strong>
+                {loading && (
+                  <div className="ai-message ai-message-assistant">
+                    <strong>
+                      M-Command AI
+                    </strong>
+
+                    <p>
+                      جاري تجهيز الإجابة...
+                    </p>
+                  </div>
+                )}
               </div>
+            )}
+          </div>
 
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${project.progress}%`,
-                  }}
-                />
-              </div>
+          <div className="ai-input-area">
+            <input
+              type="text"
+              value={input}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
+              onKeyDown={handleKeyDown}
+              placeholder="اكتب سؤالك لـ M-Command AI..."
+              disabled={loading}
+            />
 
-              <input
-                className="project-progress-slider"
-                type="range"
-                min="0"
-                max="100"
-                value={project.progress}
-                onChange={(event) =>
-                  updateProgress(
-                    project.id,
-                    Number(event.target.value)
-                  )
-                }
-                aria-label={`تقدم المشروع ${project.title}`}
-              />
-            </article>
-          ))}
+            <button
+              type="button"
+              onClick={sendMessage}
+              disabled={
+                loading || !input.trim()
+              }
+            >
+              {loading ? 'جاري...' : 'إرسال'}
+            </button>
+          </div>
         </section>
-      )}
+
+        <section className="ai-tools">
+          <div className="section-title">
+            <h2>أدوات الذكاء الاصطناعي</h2>
+            <span>V1.1</span>
+          </div>
+
+          <div className="ai-tools-grid">
+            <article className="ai-tool-card">
+              <span>🎯</span>
+              <h3>تحليل الأهداف</h3>
+              <p>
+                تحليل أهدافك وتحويلها إلى خطوات عملية.
+              </p>
+            </article>
+
+            <article className="ai-tool-card">
+              <span>✓</span>
+              <h3>تنظيم المهام</h3>
+              <p>
+                ترتيب المهام وتحديد الأولويات.
+              </p>
+            </article>
+
+            <article className="ai-tool-card">
+              <span>🚀</span>
+              <h3>تحليل المشاريع</h3>
+              <p>
+                فهم حالة المشروع وتحديد الخطوات القادمة.
+              </p>
+            </article>
+
+            <article className="ai-tool-card">
+              <span>📋</span>
+              <h3>توليد خطة</h3>
+              <p>
+                إنشاء خطة عملية بناءً على هدفك.
+              </p>
+            </article>
+          </div>
+        </section>
+      </section>
     </main>
   );
-              }
+  }
