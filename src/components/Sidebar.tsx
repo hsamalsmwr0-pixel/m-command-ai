@@ -15,10 +15,15 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <strong>M</strong>
+
         <div>
-          <b>M-Command AI</b>
-          <span>Command Center</span>
+          <b>M-COMMAND</b>
+          <span>AI COMMAND CENTER</span>
         </div>
+      </div>
+
+      <div className="sidebar-section-label">
+        COMMAND CENTER
       </div>
 
       <nav>
@@ -31,10 +36,28 @@ export default function Sidebar() {
             }
           >
             <span>{item.icon}</span>
-            {item.label}
+
+            <div className="sidebar-item-content">
+              <strong>{item.label}</strong>
+            </div>
+
+            <div className="sidebar-item-arrow">
+              ›
+            </div>
           </NavLink>
         ))}
       </nav>
+
+      <div className="sidebar-system">
+        <div className="sidebar-system-title">
+          <span className="sidebar-system-dot"></span>
+          SYSTEM ONLINE
+        </div>
+
+        <div className="sidebar-system-text">
+          M-Command AI • V1.1
+        </div>
+      </div>
     </aside>
   );
 }
