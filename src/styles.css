@@ -1136,3 +1136,97 @@ h1 {
     font-size: 16px;
   }
     }
+/* =========================
+   NOTES PAGE
+========================= */
+
+.note-form h2 {
+  margin: 0 0 25px;
+  font-size: 20px;
+}
+
+/* =========================
+   NOTES GRID
+========================= */
+
+.notes-grid {
+  width: min(1200px, 90%);
+  margin: 0 auto;
+  padding-bottom: 80px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.note-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #202838;
+  border-radius: 18px;
+  background: #10151f;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+
+.note-card:hover {
+  transform: translateY(-3px);
+  border-color: #39455b;
+}
+
+.note-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.note-card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.note-content {
+  margin: 18px 0 0;
+  color: #8993a7;
+  line-height: 1.8;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* =========================
+   NOTES MOBILE
+========================= */
+
+@media (max-width: 1000px) {
+  .notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .notes-grid {
+    width: 90%;
+  }
+
+  .note-card {
+    padding: 18px;
+  }
+
+  .note-card-header {
+    gap: 10px;
+  }
+
+  .note-card-header h2 {
+    font-size: 16px;
+  }
+}
