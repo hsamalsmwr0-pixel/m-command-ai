@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../styles.css';
 
 type Message = {
@@ -36,10 +36,39 @@ type Note = {
   content: string;
 };
 
+const CHAT_STORAGE_KEY = 'm-command-ai-chat';
+
 export default function AI() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const savedMessages =
+        localStorage.getItem(CHAT_STORAGE_KEY);
+
+      if (!savedMessages) {
+        return [];
+      }
+
+      const parsedMessages =
+        JSON.parse(savedMessages);
+
+      return Array.isArray(parsedMessages)
+        ? parsedMessages
+        : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(
+      CHAT_STORAGE_KEY,
+      JSON.stringify(messages)
+    );
+  }, [messages]);
 
   const getGoals = (): Goal[] => {
     try {
@@ -195,6 +224,15 @@ export default function AI() {
     }
   };
 
+  const clearChat = () => {
+    if (loading) {
+      return;
+    }
+
+    setMessages([]);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+  };
+
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
   ) => {
@@ -234,6 +272,15 @@ export default function AI() {
               <strong>M-Command AI</strong>
               <span>مساعد مركز القيادة</span>
             </div>
+
+            <button
+              type="button"
+              onClick={clearChat}
+              disabled={loading || messages.length === 0}
+              className="delete-button"
+            >
+              محادثة جديدة
+            </button>
           </div>
 
           <div className="ai-empty-state">
@@ -353,4 +400,4 @@ export default function AI() {
       </section>
     </main>
   );
-  }
+      }
