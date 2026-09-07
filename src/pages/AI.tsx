@@ -51,131 +51,19 @@ const ACTIVE_CONVERSATION_STORAGE_KEY =
   'm-command-ai-active-conversation';
 
 function createConversation(): Conversation {
+  const now = Date.now();
+
   return {
-    id: Date.now(),
+    id: now,
     title: 'محادثة جديدة',
     messages: [],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
-function renderFormattedText(text: string) {
-  const lines = text.split('\n');
-  const elements: JSX.Element[] = [];
-
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine) {
-      elements.push(
-        <div
-          key={`space-${index}`}
-          className="ai-text-space"
-        />
-      );
-
-      return;
-    }
-
-    const isHeading =
-      /^\*\*.+\*\*$/.test(trimmedLine);
-
-    const isNumberedList =
-      /^\d+\.\s+/.test(trimmedLine);
-
-    const isBullet =
-      /^[-•*]\s+/.test(trimmedLine);
-
-    let cleanLine = trimmedLine;
-
-    if (isHeading) {
-      cleanLine = cleanLine.replace(
-        /^\*\*|\*\*$/g,
-        ''
-      );
-
-      elements.push(
-        <h3
-          key={index}
-          className="ai-response-heading"
-        >
-          {cleanLine}
-        </h3>
-      );
-
-      return;
-    }
-
-    if (isNumberedList) {
-      const match =
-        cleanLine.match(/^(\d+\.)\s+(.+)$/);
-
-      if (match) {
-        elements.push(
-          <div
-            key={index}
-            className="ai-response-list-item"
-          >
-            <span className="ai-response-number">
-              {match[1]}
-            </span>
-
-            <span>
-              {renderInlineFormatting(
-                match[2]
-              )}
-            </span>
-          </div>
-        );
-
-        return;
-      }
-    }
-
-    if (isBullet) {
-      cleanLine = cleanLine.replace(
-        /^[-•*]\s+/,
-        ''
-      );
-
-      elements.push(
-        <div
-          key={index}
-          className="ai-response-list-item"
-        >
-          <span className="ai-response-bullet">
-            •
-          </span>
-
-          <span>
-            {renderInlineFormatting(
-              cleanLine
-            )}
-          </span>
-        </div>
-      );
-
-      return;
-    }
-
-    elements.push(
-      <p
-        key={index}
-        className="ai-response-paragraph"
-      >
-        {renderInlineFormatting(cleanLine)}
-      </p>
-    );
-  });
-
-  return elements;
-}
-
 function renderInlineFormatting(text: string) {
-  const parts = text.split(
-    /(\*\*[^*]+\*\*)/g
-  );
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
 
   return parts.map((part, index) => {
     if (
@@ -190,6 +78,101 @@ function renderInlineFormatting(text: string) {
     }
 
     return part;
+  });
+}
+
+function renderFormattedText(text: string) {
+  const lines = text.split('\n');
+
+  return lines.map((line, index) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      return (
+        <div
+          key={`space-${index}`}
+          className="ai-text-space"
+        />
+      );
+    }
+
+    const isHeading =
+      /^\*\*.+\*\*$/.test(trimmedLine);
+
+    const isNumberedList =
+      /^\d+\.\s+/.test(trimmedLine);
+
+    const isBullet =
+      /^[-•*]\s+/.test(trimmedLine);
+
+    if (isHeading) {
+      const cleanHeading = trimmedLine.replace(
+        /^\*\*|\*\*$/g,
+        ''
+      );
+
+      return (
+        <h3
+          key={index}
+          className="ai-response-heading"
+        >
+          {cleanHeading}
+        </h3>
+      );
+    }
+
+    if (isNumberedList) {
+      const match =
+        trimmedLine.match(/^(\d+\.)\s+(.+)$/);
+
+      if (match) {
+        return (
+          <div
+            key={index}
+            className="ai-response-list-item"
+          >
+            <span className="ai-response-number">
+              {match[1]}
+            </span>
+
+            <span>
+              {renderInlineFormatting(match[2])}
+            </span>
+          </div>
+        );
+      }
+    }
+
+    if (isBullet) {
+      const cleanLine = trimmedLine.replace(
+        /^[-•*]\s+/,
+        ''
+      );
+
+      return (
+        <div
+          key={index}
+          className="ai-response-list-item"
+        >
+          <span className="ai-response-bullet">
+            •
+          </span>
+
+          <span>
+            {renderInlineFormatting(cleanLine)}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <p
+        key={index}
+        className="ai-response-paragraph"
+      >
+        {renderInlineFormatting(trimmedLine)}
+      </p>
+    );
   });
 }
 
@@ -281,9 +264,7 @@ export default function AI() {
         'm-command-goals'
       );
 
-      if (!savedGoals) {
-        return [];
-      }
+      if (!savedGoals) return [];
 
       const parsedGoals = JSON.parse(savedGoals);
 
@@ -301,9 +282,7 @@ export default function AI() {
         'm-command-tasks'
       );
 
-      if (!savedTasks) {
-        return [];
-      }
+      if (!savedTasks) return [];
 
       const parsedTasks = JSON.parse(savedTasks);
 
@@ -321,9 +300,7 @@ export default function AI() {
         'm-command-projects'
       );
 
-      if (!savedProjects) {
-        return [];
-      }
+      if (!savedProjects) return [];
 
       const parsedProjects =
         JSON.parse(savedProjects);
@@ -342,9 +319,7 @@ export default function AI() {
         'm-command-notes'
       );
 
-      if (!savedNotes) {
-        return [];
-      }
+      if (!savedNotes) return [];
 
       const parsedNotes = JSON.parse(savedNotes);
 
@@ -368,8 +343,7 @@ export default function AI() {
               ...conversation,
               messages: newMessages,
               title:
-                title ||
-                conversation.title,
+                title || conversation.title,
               updatedAt: Date.now(),
             }
           : conversation
@@ -380,9 +354,7 @@ export default function AI() {
   const sendMessage = async () => {
     const message = input.trim();
 
-    if (!message || loading) {
-      return;
-    }
+    if (!message || loading) return;
 
     let conversationId =
       activeConversationId;
@@ -455,41 +427,141 @@ export default function AI() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(
-          data.error ||
-            'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
+          'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
         );
       }
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content:
-          data.message ||
-          'لم أتمكن من الحصول على إجابة.',
-      };
+      if (!response.body) {
+        throw new Error(
+          'لم يتم استلام Stream من الخادم.'
+        );
+      }
+
+      const reader =
+        response.body.getReader();
+
+      const decoder =
+        new TextDecoder('utf-8');
+
+      let assistantText = '';
+
+      updateConversation(
+        conversationId,
+        [
+          ...messagesWithUser,
+          {
+            role: 'assistant',
+            content: '',
+          },
+        ]
+      );
+
+      let buffer = '';
+
+      while (true) {
+        const { value, done } =
+          await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(
+          value,
+          { stream: true }
+        );
+
+        const events =
+          buffer.split('\n\n');
+
+        buffer =
+          events.pop() || '';
+
+        for (const event of events) {
+          const lines =
+            event.split('\n');
+
+          for (const line of lines) {
+            if (!line.startsWith('data:')) {
+              continue;
+            }
+
+            const data =
+              line.slice(5).trim();
+
+            if (!data || data === '[DONE]') {
+              continue;
+            }
+
+            try {
+              const parsed =
+                JSON.parse(data);
+
+              const token =
+                parsed?.response ||
+                parsed?.choices?.[0]
+                  ?.delta?.content ||
+                parsed?.choices?.[0]
+                  ?.message?.content ||
+                '';
+
+              if (
+                typeof token !== 'string' ||
+                !token
+              ) {
+                continue;
+              }
+
+              assistantText += token;
+
+              updateConversation(
+                conversationId!,
+                [
+                  ...messagesWithUser,
+                  {
+                    role: 'assistant',
+                    content: assistantText,
+                  },
+                ]
+              );
+            } catch {
+              continue;
+            }
+          }
+        }
+      }
+
+      const finalText =
+        assistantText.trim();
+
+      if (!finalText) {
+        throw new Error(
+          'تم الاتصال بالذكاء الاصطناعي ولكن لم يتم استلام إجابة.'
+        );
+      }
 
       updateConversation(
         conversationId!,
         [
           ...messagesWithUser,
-          assistantMessage,
+          {
+            role: 'assistant',
+            content: finalText,
+          },
         ]
       );
     } catch {
-      const errorMessage: Message = {
-        role: 'assistant',
-        content:
-          'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
-      };
-
       updateConversation(
         conversationId!,
         [
           ...messagesWithUser,
-          errorMessage,
+          {
+            role: 'assistant',
+            content:
+              'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
+          },
         ]
       );
     } finally {
@@ -498,9 +570,7 @@ export default function AI() {
   };
 
   const createNewConversation = () => {
-    if (loading) {
-      return;
-    }
+    if (loading) return;
 
     const newConversation =
       createConversation();
@@ -520,9 +590,7 @@ export default function AI() {
   const selectConversation = (
     id: number
   ) => {
-    if (loading) {
-      return;
-    }
+    if (loading) return;
 
     setActiveConversationId(id);
     setInput('');
@@ -539,7 +607,6 @@ export default function AI() {
   return (
     <main className="page">
       <section className="ai-page">
-
         <div className="ai-header">
           <div>
             <span className="eyebrow">
@@ -550,7 +617,8 @@ export default function AI() {
 
             <p>
               استخدم الذكاء الاصطناعي لتحليل أهدافك
-              ومهامك ومشاريعك وملاحظاتك وتنظيم عملك من مكان واحد.
+              ومهامك ومشاريعك وملاحظاتك وتنظيم عملك
+              من مكان واحد.
             </p>
           </div>
 
@@ -561,9 +629,7 @@ export default function AI() {
         </div>
 
         <section className="ai-chat-layout">
-
           <aside className="ai-conversations">
-
             <div className="ai-conversations-header">
               <h2>المحادثات</h2>
 
@@ -580,7 +646,6 @@ export default function AI() {
             </div>
 
             <div className="ai-conversations-list">
-
               {conversations.length === 0 ? (
                 <p className="ai-no-conversations">
                   لا توجد محادثات محفوظة.
@@ -623,14 +688,11 @@ export default function AI() {
                   )
                 )
               )}
-
             </div>
           </aside>
 
           <section className="ai-chat-card">
-
             <div className="ai-chat-header">
-
               <div className="ai-avatar">
                 🤖
               </div>
@@ -644,11 +706,9 @@ export default function AI() {
                   مساعد مركز القيادة
                 </span>
               </div>
-
             </div>
 
             <div className="ai-empty-state">
-
               {messages.length === 0 ? (
                 <>
                   <div className="ai-large-icon">
@@ -667,7 +727,6 @@ export default function AI() {
                 </>
               ) : (
                 <div className="ai-messages">
-
                   {messages.map(
                     (message, index) => (
                       <div
@@ -692,6 +751,15 @@ export default function AI() {
                             {renderFormattedText(
                               message.content
                             )}
+
+                            {loading &&
+                              index ===
+                                messages.length -
+                                  1 && (
+                                <span className="ai-streaming-cursor">
+                                  ▌
+                                </span>
+                              )}
                           </div>
                         ) : (
                           <p>
@@ -703,26 +771,11 @@ export default function AI() {
                       </div>
                     )
                   )}
-
-                  {loading && (
-                    <div className="ai-message ai-message-assistant">
-                      <strong>
-                        M-Command AI
-                      </strong>
-
-                      <p>
-                        جاري تجهيز الإجابة...
-                      </p>
-                    </div>
-                  )}
-
                 </div>
               )}
-
             </div>
 
             <div className="ai-input-area">
-
               <input
                 type="text"
                 value={input}
@@ -750,15 +803,11 @@ export default function AI() {
                   ? 'جاري...'
                   : 'إرسال'}
               </button>
-
             </div>
-
           </section>
-
         </section>
 
         <section className="ai-tools">
-
           <div className="section-title">
             <h2>
               أدوات الذكاء الاصطناعي
@@ -768,13 +817,10 @@ export default function AI() {
           </div>
 
           <div className="ai-tools-grid">
-
             <article className="ai-tool-card">
               <span>🎯</span>
 
-              <h3>
-                تحليل الأهداف
-              </h3>
+              <h3>تحليل الأهداف</h3>
 
               <p>
                 تحليل أهدافك وتحويلها
@@ -785,9 +831,7 @@ export default function AI() {
             <article className="ai-tool-card">
               <span>✓</span>
 
-              <h3>
-                تنظيم المهام
-              </h3>
+              <h3>تنظيم المهام</h3>
 
               <p>
                 ترتيب المهام وتحديد
@@ -798,9 +842,7 @@ export default function AI() {
             <article className="ai-tool-card">
               <span>🚀</span>
 
-              <h3>
-                تحليل المشاريع
-              </h3>
+              <h3>تحليل المشاريع</h3>
 
               <p>
                 فهم حالة المشروع
@@ -811,21 +853,16 @@ export default function AI() {
             <article className="ai-tool-card">
               <span>📋</span>
 
-              <h3>
-                توليد خطة
-              </h3>
+              <h3>توليد خطة</h3>
 
               <p>
                 إنشاء خطة عملية بناءً
                 على هدفك.
               </p>
             </article>
-
           </div>
-
         </section>
-
       </section>
     </main>
   );
-    }
+      }
