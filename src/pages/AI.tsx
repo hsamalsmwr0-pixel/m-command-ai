@@ -176,6 +176,48 @@ function renderFormattedText(text: string) {
   });
 }
 
+function extractStreamText(data: unknown): string {
+  if (!data || typeof data !== 'object') {
+    return '';
+  }
+
+  const item = data as any;
+
+  if (
+    typeof item.response === 'string'
+  ) {
+    return item.response;
+  }
+
+  if (
+    typeof item.response?.response === 'string'
+  ) {
+    return item.response.response;
+  }
+
+  if (
+    typeof item.choices?.[0]?.delta
+      ?.content === 'string'
+  ) {
+    return item.choices[0].delta.content;
+  }
+
+  if (
+    typeof item.choices?.[0]?.message
+      ?.content === 'string'
+  ) {
+    return item.choices[0].message.content;
+  }
+
+  if (
+    typeof item.choices?.[0]?.text === 'string'
+  ) {
+    return item.choices[0].text;
+  }
+
+  return '';
+}
+
 export default function AI() {
   const [conversations, setConversations] =
     useState<Conversation[]>(() => {
@@ -435,7 +477,7 @@ export default function AI() {
 
       if (!response.body) {
         throw new Error(
-          'لم يتم استلام Stream من الخادم.'
+          'الخادم لم يرسل Stream.'
         );
       }
 
@@ -446,6 +488,7 @@ export default function AI() {
         new TextDecoder('utf-8');
 
       let assistantText = '';
+      let buffer = '';
 
       updateConversation(
         conversationId,
@@ -458,8 +501,6 @@ export default function AI() {
         ]
       );
 
-      let buffer = '';
-
       while (true) {
         const { value, done } =
           await reader.read();
@@ -468,67 +509,100 @@ export default function AI() {
           break;
         }
 
-        buffer += decoder.decode(
-          value,
-          { stream: true }
-        );
+        const chunk =
+          decoder.decode(value, {
+            stream: true,
+          });
 
-        const events =
-          buffer.split('\n\n');
+        buffer += chunk;
+
+        const lines =
+          buffer.split('\n');
 
         buffer =
-          events.pop() || '';
+          lines.pop() || '';
 
-        for (const event of events) {
-          const lines =
-            event.split('\n');
+        for (const line of lines) {
+          const cleanLine = line.trim();
 
-          for (const line of lines) {
-            if (!line.startsWith('data:')) {
+          if (!cleanLine) {
+            continue;
+          }
+
+          if (
+            !cleanLine.startsWith('data:')
+          ) {
+            continue;
+          }
+
+          const jsonText =
+            cleanLine
+              .slice(5)
+              .trim();
+
+          if (
+            !jsonText ||
+            jsonText === '[DONE]'
+          ) {
+            continue;
+          }
+
+          try {
+            const parsed =
+              JSON.parse(jsonText);
+
+            const text =
+              extractStreamText(parsed);
+
+            if (!text) {
               continue;
             }
 
-            const data =
-              line.slice(5).trim();
+            assistantText += text;
 
-            if (!data || data === '[DONE]') {
-              continue;
+            updateConversation(
+              conversationId!,
+              [
+                ...messagesWithUser,
+                {
+                  role: 'assistant',
+                  content: assistantText,
+                },
+              ]
+            );
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      const remaining =
+        buffer.trim();
+
+      if (
+        remaining.startsWith('data:')
+      ) {
+        const jsonText =
+          remaining
+            .slice(5)
+            .trim();
+
+        if (
+          jsonText &&
+          jsonText !== '[DONE]'
+        ) {
+          try {
+            const parsed =
+              JSON.parse(jsonText);
+
+            const text =
+              extractStreamText(parsed);
+
+            if (text) {
+              assistantText += text;
             }
-
-            try {
-              const parsed =
-                JSON.parse(data);
-
-              const token =
-                parsed?.response ||
-                parsed?.choices?.[0]
-                  ?.delta?.content ||
-                parsed?.choices?.[0]
-                  ?.message?.content ||
-                '';
-
-              if (
-                typeof token !== 'string' ||
-                !token
-              ) {
-                continue;
-              }
-
-              assistantText += token;
-
-              updateConversation(
-                conversationId!,
-                [
-                  ...messagesWithUser,
-                  {
-                    role: 'assistant',
-                    content: assistantText,
-                  },
-                ]
-              );
-            } catch {
-              continue;
-            }
+          } catch {
+            // تجاهل الجزء غير المكتمل
           }
         }
       }
@@ -538,7 +612,7 @@ export default function AI() {
 
       if (!finalText) {
         throw new Error(
-          'تم الاتصال بالذكاء الاصطناعي ولكن لم يتم استلام إجابة.'
+          'لم يتم استلام إجابة من الذكاء الاصطناعي.'
         );
       }
 
@@ -865,4 +939,4 @@ export default function AI() {
       </section>
     </main>
   );
-      }
+                   }
