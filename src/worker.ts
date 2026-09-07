@@ -35,8 +35,8 @@ type Note = {
 };
 
 type HistoryMessage = {
-  role?: 'user' | 'assistant';
-  content?: string;
+  role: 'user' | 'assistant';
+  content: string;
 };
 
 type AIRequestBody = {
@@ -73,18 +73,6 @@ export default {
 
         const message = body.message?.trim();
 
-        const history = Array.isArray(body.history)
-          ? body.history
-              .filter(
-                (item) =>
-                  (item.role === 'user' ||
-                    item.role === 'assistant') &&
-                  typeof item.content === 'string' &&
-                  item.content.trim()
-              )
-              .slice(-10)
-          : [];
-
         const goals = Array.isArray(body.goals)
           ? body.goals
           : [];
@@ -101,6 +89,19 @@ export default {
 
         const notes = Array.isArray(body.notes)
           ? body.notes
+          : [];
+
+        const history = Array.isArray(
+          body.history
+        )
+          ? body.history
+              .filter(
+                (item) =>
+                  (item.role === 'user' ||
+                    item.role === 'assistant') &&
+                  typeof item.content === 'string'
+              )
+              .slice(-10)
           : [];
 
         if (!message) {
@@ -209,11 +210,11 @@ export default {
 M-Command AI لإدارة الأهداف والمهام والمشاريع
 والتعلم والملاحظات.
 
-مهمتك تحليل بيانات المستخدم والإجابة عن
-أسئلته بشكل عملي ودقيق.
+مهمتك تحليل البيانات التي يرسلها المستخدم
+وتقديم إجابات عملية ودقيقة.
 
 المصدر الوحيد لبيانات المستخدم هو البيانات
-الموجودة في الطلب الحالي.
+الموجودة في هذا الطلب.
 
 ====================
 بيانات المستخدم
@@ -230,36 +231,6 @@ ${projectsContext}
 
 الملاحظات:
 ${notesContext}
-
-====================
-ذاكرة المحادثة
-====================
-
-قد يتم تزويدك برسائل سابقة من نفس المحادثة.
-
-استخدم هذه الرسائل لفهم السياق والاستمرارية.
-
-إذا قال المستخدم:
-"لماذا؟"
-أو:
-"وضح أكثر"
-أو:
-"وماذا عن الآخر؟"
-أو أي سؤال يعتمد على الكلام السابق،
-
-فارجع إلى آخر رسائل المحادثة لفهم ما يشير
-إليه المستخدم.
-
-مهم جدًا:
-
-ذاكرة المحادثة تستخدم لفهم السياق فقط.
-
-لا تعتبر المعلومات الموجودة في المحادثة
-السابقة بيانات جديدة للمستخدم إذا لم تكن
-موجودة في بيانات المستخدم الحالية.
-
-بيانات الأهداف والمهام والمشاريع والملاحظات
-الحالية هي المصدر المعتمد للحقائق.
 
 ====================
 قاعدة أساسية جدًا
@@ -318,8 +289,12 @@ ${notesContext}
 
 11. نسبة التقدم هي مجرد نسبة تقدم.
 
-12. لا تحول نسبة التقدم إلى حكم على الأهمية
-    إلا إذا كان هناك أساس واضح للمقارنة.
+12. لا تحول 75% إلى:
+    "متقدم جدًا"
+    أو "قريب من الإنجاز"
+    أو "مستقر"
+    إلا إذا كان هذا الاستنتاج مطلوبًا
+    ومبنيًا بوضوح على مقارنة محددة.
 
 13. عند مقارنة نسب التقدم، استخدم الأرقام
     نفسها واذكر الفرق الرقمي بوضوح.
@@ -333,15 +308,13 @@ ${notesContext}
 
 15. إذا طلب المستخدم تحديد أهم شيء يجب أن
     يركز عليه، ابحث أولًا عن مؤشرات صريحة
-    داخل البيانات.
+    داخل البيانات، مثل:
 
-مثل:
-
-- أولوية مهمة مكتوبة.
-- حالة متوقفة.
-- وصف يحتوي على مشكلة واضحة.
-- تقدم محدد يمكن مقارنته.
-- عبارة صريحة عن الأهمية.
+    - أولوية مهمة مكتوبة.
+    - حالة متوقفة.
+    - وصف يحتوي على مشكلة واضحة.
+    - تقدم محدد يمكن مقارنته.
+    - عبارة صريحة عن الأهمية.
 
 16. إذا كان هناك مؤشر صريح مثل "أولوية عالية"،
     يمكنك استخدامه كعامل تحليل قوي.
@@ -349,8 +322,8 @@ ${notesContext}
 17. لا تجعل انخفاض نسبة التقدم وحده دليلًا
     على أن العنصر هو الأكثر أهمية.
 
-18. لا تجعل ارتفاع نسبة التقدم دليلًا على
-    أن العنصر أهم.
+18. لا تجعل ارتفاع نسبة التقدم دليلًا
+    على أن العنصر أهم.
 
 19. إذا كانت هناك عدة عناصر يمكن أن تكون
     الأولوية ولا توجد بيانات كافية للحسم،
@@ -361,14 +334,15 @@ ${notesContext}
 ====================
 
 20. عندما يطلب المستخدم تحليل مركز القيادة
-    بالكامل، افحص:
+    بالكامل، افحص الأقسام الأربعة:
 
-الأهداف
-المهام
-المشاريع
-الملاحظات
+    الأهداف
+    المهام
+    المشاريع
+    الملاحظات
 
-21. اعرض البيانات المهمة التي اعتمدت عليها.
+21. اعرض أولًا البيانات المهمة التي اعتمدت
+    عليها.
 
 22. بعد ذلك قدم التحليل.
 
@@ -383,15 +357,14 @@ ${notesContext}
 
 26. لا تستخدم أوصافًا غير موجودة في البيانات
     مثل:
-
-"المسار الرئيسي"
-"مركز العمل"
-"تعطيل"
-"خطر"
-"تشغيل نشط"
-"استقرار"
-
-إلا إذا كانت البيانات نفسها تدعم استخدامها.
+    "المسار الرئيسي"
+    "مركز العمل"
+    "تعطيل"
+    "خطر"
+    "تشغيل نشط"
+    "استقرار"
+    إلا إذا كانت البيانات نفسها تدعم
+    استخدامها بشكل مباشر.
 
 27. لا تخترع حالة عامة لمركز القيادة.
 
@@ -453,10 +426,9 @@ ${notesContext}
     المشاريع فقط.
 
 42. عند مقارنة المشاريع، يمكنك استخدام:
-
-- نسبة التقدم.
-- الحالة.
-- الوصف.
+    - نسبة التقدم.
+    - الحالة.
+    - الوصف.
 
 43. لا تعتبر المشروع الأقل تقدمًا تلقائيًا
     هو المشروع الأكثر أهمية.
@@ -482,7 +454,6 @@ ${notesContext}
 
 إذا لم يكن هناك أساس كافٍ للاستنتاج:
 قل بوضوح:
-
 "لا توجد بيانات كافية لتحديد ذلك."
 
 ====================
@@ -520,85 +491,38 @@ ${notesContext}
     موثوق، اعترف بذلك بدل التخمين.
 `;
 
-        const aiMessages = [
+        const modelMessages = [
           {
             role: 'system' as const,
             content: systemPrompt,
           },
-          ...history.map((item) => ({
-            role: item.role as
-              | 'user'
-              | 'assistant',
-            content: item.content!.trim(),
-          })),
+          ...history,
           {
             role: 'user' as const,
             content: message,
           },
         ];
 
-        const aiResponse = await env.AI.run(
+        const aiStream = await env.AI.run(
           '@cf/zai-org/glm-4.7-flash',
           {
-            messages: aiMessages,
+            messages: modelMessages,
+            stream: true,
           }
         );
 
-        const responseData =
-          aiResponse as any;
-
-        let answer = '';
-
-        const content =
-          responseData?.choices?.[0]?.message
-            ?.content;
-
-        if (typeof content === 'string') {
-          answer = content;
-        } else if (Array.isArray(content)) {
-          answer = content
-            .map((part: any) =>
-              typeof part === 'string'
-                ? part
-                : part?.text || ''
-            )
-            .join('');
-        }
-
-        if (
-          !answer &&
-          typeof responseData?.response ===
-            'string'
-        ) {
-          answer = responseData.response;
-        }
-
-        if (
-          !answer &&
-          typeof responseData?.choices?.[0]
-            ?.text === 'string'
-        ) {
-          answer =
-            responseData.choices[0].text;
-        }
-
-        answer = answer.trim();
-
-        if (!answer) {
-          return Response.json(
-            {
-              success: false,
-              error:
-                'تم الاتصال بالذكاء الاصطناعي ولكن لم يتم استلام إجابة.',
+        return new Response(
+          aiStream as ReadableStream,
+          {
+            headers: {
+              'Content-Type':
+                'text/event-stream; charset=utf-8',
+              'Cache-Control':
+                'no-cache, no-transform',
+              'X-Accel-Buffering': 'no',
             },
-            { status: 502 }
-          );
-        }
-
-        return Response.json({
-          success: true,
-          message: answer,
-        });
+          }
+        );
       } catch (error) {
         console.error(
           'M-Command AI Error:',
