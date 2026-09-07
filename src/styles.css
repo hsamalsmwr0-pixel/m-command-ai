@@ -2745,3 +2745,75 @@ body {
     line-height: 1.75;
   }
 }
+/* =========================
+   AI RESPONSE FORMATTING
+========================= */
+
+.ai-formatted-response {
+  width: 100%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.ai-response-paragraph {
+  margin: 0 0 12px;
+  color: #c1c8d5;
+  line-height: 1.9;
+}
+
+.ai-response-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.ai-response-heading {
+  margin: 18px 0 10px;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.ai-response-heading:first-child {
+  margin-top: 0;
+}
+
+.ai-response-list-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 8px 0;
+  color: #c1c8d5;
+  line-height: 1.8;
+}
+
+.ai-response-number,
+.ai-response-bullet {
+  flex: 0 0 auto;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.ai-response-list-item strong,
+.ai-response-paragraph strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.ai-text-space {
+  height: 5px;
+}
+
+@media (max-width: 480px) {
+  .ai-response-paragraph {
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  .ai-response-heading {
+    font-size: 15px;
+  }
+
+  .ai-response-list-item {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+}
