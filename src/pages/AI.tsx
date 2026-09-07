@@ -134,6 +134,8 @@ export default function AI() {
     const projects = getProjects();
     const notes = getNotes();
 
+    const previousMessages = messages;
+
     setMessages((prev) => [
       ...prev,
       {
@@ -153,6 +155,7 @@ export default function AI() {
         },
         body: JSON.stringify({
           message,
+          history: previousMessages,
           goals,
           tasks,
           projects,
@@ -350,4 +353,4 @@ export default function AI() {
       </section>
     </main>
   );
-          }
+  }
