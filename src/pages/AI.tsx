@@ -36,39 +36,110 @@ type Note = {
   content: string;
 };
 
-const CHAT_STORAGE_KEY = 'm-command-ai-chat';
+type Conversation = {
+  id: number;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+};
+
+const CONVERSATIONS_STORAGE_KEY =
+  'm-command-ai-conversations';
+
+const ACTIVE_CONVERSATION_STORAGE_KEY =
+  'm-command-ai-active-conversation';
+
+function createConversation(): Conversation {
+  return {
+    id: Date.now(),
+    title: 'محادثة جديدة',
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
 
 export default function AI() {
-  const [input, setInput] = useState('');
-
-  const [messages, setMessages] = useState<Message[]>(() => {
+  const [conversations, setConversations] = useState<
+    Conversation[]
+  >(() => {
     try {
-      const savedMessages =
-        localStorage.getItem(CHAT_STORAGE_KEY);
+      const saved = localStorage.getItem(
+        CONVERSATIONS_STORAGE_KEY
+      );
 
-      if (!savedMessages) {
+      if (!saved) {
         return [];
       }
 
-      const parsedMessages =
-        JSON.parse(savedMessages);
+      const parsed = JSON.parse(saved);
 
-      return Array.isArray(parsedMessages)
-        ? parsedMessages
+      return Array.isArray(parsed)
+        ? parsed
         : [];
     } catch {
       return [];
     }
   });
 
+  const [activeConversationId, setActiveConversationId] =
+    useState<number | null>(() => {
+      try {
+        const saved = localStorage.getItem(
+          ACTIVE_CONVERSATION_STORAGE_KEY
+        );
+
+        return saved ? Number(saved) : null;
+      } catch {
+        return null;
+      }
+    });
+
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const activeConversation = conversations.find(
+    (conversation) =>
+      conversation.id === activeConversationId
+  );
+
+  const messages =
+    activeConversation?.messages || [];
 
   useEffect(() => {
     localStorage.setItem(
-      CHAT_STORAGE_KEY,
-      JSON.stringify(messages)
+      CONVERSATIONS_STORAGE_KEY,
+      JSON.stringify(conversations)
     );
-  }, [messages]);
+  }, [conversations]);
+
+  useEffect(() => {
+    if (activeConversationId !== null) {
+      localStorage.setItem(
+        ACTIVE_CONVERSATION_STORAGE_KEY,
+        String(activeConversationId)
+      );
+    } else {
+      localStorage.removeItem(
+        ACTIVE_CONVERSATION_STORAGE_KEY
+      );
+    }
+  }, [activeConversationId]);
+
+  useEffect(() => {
+    if (
+      conversations.length > 0 &&
+      activeConversationId === null
+    ) {
+      setActiveConversationId(
+        conversations[0].id
+      );
+    }
+  }, [
+    conversations,
+    activeConversationId,
+  ]);
 
   const getGoals = (): Goal[] => {
     try {
@@ -151,6 +222,27 @@ export default function AI() {
     }
   };
 
+  const updateConversation = (
+    id: number,
+    newMessages: Message[],
+    title?: string
+  ) => {
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === id
+          ? {
+              ...conversation,
+              messages: newMessages,
+              title:
+                title ||
+                conversation.title,
+              updatedAt: Date.now(),
+            }
+          : conversation
+      )
+    );
+  };
+
   const sendMessage = async () => {
     const message = input.trim();
 
@@ -158,20 +250,57 @@ export default function AI() {
       return;
     }
 
+    let conversationId =
+      activeConversationId;
+
+    if (conversationId === null) {
+      const newConversation =
+        createConversation();
+
+      setConversations((current) => [
+        newConversation,
+        ...current,
+      ]);
+
+      conversationId =
+        newConversation.id;
+
+      setActiveConversationId(
+        conversationId
+      );
+    }
+
+    const currentConversation =
+      conversations.find(
+        (conversation) =>
+          conversation.id === conversationId
+      );
+
+    const previousMessages =
+      currentConversation?.messages || [];
+
     const goals = getGoals();
     const tasks = getTasks();
     const projects = getProjects();
     const notes = getNotes();
 
-    const previousMessages = messages;
+    const userMessage: Message = {
+      role: 'user',
+      content: message,
+    };
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'user',
-        content: message,
-      },
-    ]);
+    const messagesWithUser = [
+      ...previousMessages,
+      userMessage,
+    ];
+
+    updateConversation(
+      conversationId,
+      messagesWithUser,
+      previousMessages.length === 0
+        ? message.slice(0, 40)
+        : undefined
+    );
 
     setInput('');
     setLoading(true);
@@ -201,36 +330,68 @@ export default function AI() {
         );
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content:
-            data.message ||
-            'لم أتمكن من الحصول على إجابة.',
-        },
-      ]);
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content:
+          data.message ||
+          'لم أتمكن من الحصول على إجابة.',
+      };
+
+      updateConversation(
+        conversationId!,
+        [
+          ...messagesWithUser,
+          assistantMessage,
+        ]
+      );
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content:
-            'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
-        },
-      ]);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content:
+          'حدث خطأ أثناء الاتصال بـ M-Command AI. حاول مرة أخرى.',
+      };
+
+      updateConversation(
+        conversationId!,
+        [
+          ...messagesWithUser,
+          errorMessage,
+        ]
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const clearChat = () => {
+  const createNewConversation = () => {
     if (loading) {
       return;
     }
 
-    setMessages([]);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
+    const newConversation =
+      createConversation();
+
+    setConversations((current) => [
+      newConversation,
+      ...current,
+    ]);
+
+    setActiveConversationId(
+      newConversation.id
+    );
+
+    setInput('');
+  };
+
+  const selectConversation = (
+    id: number
+  ) => {
+    if (loading) {
+      return;
+    }
+
+    setActiveConversationId(id);
+    setInput('');
   };
 
   const handleKeyDown = (
@@ -244,6 +405,7 @@ export default function AI() {
   return (
     <main className="page">
       <section className="ai-page">
+
         <div className="ai-header">
           <div>
             <span className="eyebrow">
@@ -264,140 +426,263 @@ export default function AI() {
           </div>
         </div>
 
-        <section className="ai-chat-card">
-          <div className="ai-chat-header">
-            <div className="ai-avatar">🤖</div>
+        <section className="ai-chat-layout">
 
-            <div>
-              <strong>M-Command AI</strong>
-              <span>مساعد مركز القيادة</span>
+          <aside className="ai-conversations">
+
+            <div className="ai-conversations-header">
+              <h2>المحادثات</h2>
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={
+                  createNewConversation
+                }
+                disabled={loading}
+              >
+                + محادثة جديدة
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={clearChat}
-              disabled={loading || messages.length === 0}
-              className="delete-button"
-            >
-              محادثة جديدة
-            </button>
-          </div>
+            <div className="ai-conversations-list">
 
-          <div className="ai-empty-state">
-            {messages.length === 0 ? (
-              <>
-                <div className="ai-large-icon">
-                  🤖
-                </div>
-
-                <h2>كيف يمكنني مساعدتك؟</h2>
-
-                <p>
-                  ابدأ بسؤال عن أهدافك أو مهامك أو
-                  مشاريعك أو ملاحظاتك أو خطتك اليومية.
+              {conversations.length === 0 ? (
+                <p className="ai-no-conversations">
+                  لا توجد محادثات محفوظة.
                 </p>
-              </>
-            ) : (
-              <div className="ai-messages">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`ai-message ${
-                      message.role === 'user'
-                        ? 'ai-message-user'
-                        : 'ai-message-assistant'
-                    }`}
-                  >
-                    <strong>
-                      {message.role === 'user'
-                        ? 'أنت'
-                        : 'M-Command AI'}
-                    </strong>
+              ) : (
+                conversations.map(
+                  (conversation) => (
+                    <button
+                      type="button"
+                      key={
+                        conversation.id
+                      }
+                      className={`ai-conversation-item ${
+                        conversation.id ===
+                        activeConversationId
+                          ? 'active'
+                          : ''
+                      }`}
+                      onClick={() =>
+                        selectConversation(
+                          conversation.id
+                        )
+                      }
+                      disabled={loading}
+                    >
+                      <strong>
+                        {
+                          conversation.title
+                        }
+                      </strong>
 
-                    <p>{message.content}</p>
-                  </div>
-                ))}
+                      <span>
+                        {
+                          conversation
+                            .messages.length
+                        }{' '}
+                        رسالة
+                      </span>
+                    </button>
+                  )
+                )
+              )}
 
-                {loading && (
-                  <div className="ai-message ai-message-assistant">
-                    <strong>
-                      M-Command AI
-                    </strong>
+            </div>
+          </aside>
 
-                    <p>
-                      جاري تجهيز الإجابة...
-                    </p>
-                  </div>
-                )}
+          <section className="ai-chat-card">
+
+            <div className="ai-chat-header">
+
+              <div className="ai-avatar">
+                🤖
               </div>
-            )}
-          </div>
 
-          <div className="ai-input-area">
-            <input
-              type="text"
-              value={input}
-              onChange={(event) =>
-                setInput(event.target.value)
-              }
-              onKeyDown={handleKeyDown}
-              placeholder="اكتب سؤالك لـ M-Command AI..."
-              disabled={loading}
-            />
+              <div>
+                <strong>
+                  M-Command AI
+                </strong>
 
-            <button
-              type="button"
-              onClick={sendMessage}
-              disabled={
-                loading || !input.trim()
-              }
-            >
-              {loading ? 'جاري...' : 'إرسال'}
-            </button>
-          </div>
+                <span>
+                  مساعد مركز القيادة
+                </span>
+              </div>
+
+            </div>
+
+            <div className="ai-empty-state">
+
+              {messages.length === 0 ? (
+                <>
+                  <div className="ai-large-icon">
+                    🤖
+                  </div>
+
+                  <h2>
+                    كيف يمكنني مساعدتك؟
+                  </h2>
+
+                  <p>
+                    ابدأ بسؤال عن أهدافك أو
+                    مهامك أو مشاريعك أو
+                    ملاحظاتك أو خطتك اليومية.
+                  </p>
+                </>
+              ) : (
+                <div className="ai-messages">
+
+                  {messages.map(
+                    (message, index) => (
+                      <div
+                        key={index}
+                        className={`ai-message ${
+                          message.role ===
+                          'user'
+                            ? 'ai-message-user'
+                            : 'ai-message-assistant'
+                        }`}
+                      >
+                        <strong>
+                          {message.role ===
+                          'user'
+                            ? 'أنت'
+                            : 'M-Command AI'}
+                        </strong>
+
+                        <p>
+                          {
+                            message.content
+                          }
+                        </p>
+                      </div>
+                    )
+                  )}
+
+                  {loading && (
+                    <div className="ai-message ai-message-assistant">
+                      <strong>
+                        M-Command AI
+                      </strong>
+
+                      <p>
+                        جاري تجهيز الإجابة...
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+
+            <div className="ai-input-area">
+
+              <input
+                type="text"
+                value={input}
+                onChange={(event) =>
+                  setInput(
+                    event.target.value
+                  )
+                }
+                onKeyDown={
+                  handleKeyDown
+                }
+                placeholder="اكتب سؤالك لـ M-Command AI..."
+                disabled={loading}
+              />
+
+              <button
+                type="button"
+                onClick={sendMessage}
+                disabled={
+                  loading ||
+                  !input.trim()
+                }
+              >
+                {loading
+                  ? 'جاري...'
+                  : 'إرسال'}
+              </button>
+
+            </div>
+
+          </section>
+
         </section>
 
         <section className="ai-tools">
+
           <div className="section-title">
-            <h2>أدوات الذكاء الاصطناعي</h2>
+            <h2>
+              أدوات الذكاء الاصطناعي
+            </h2>
+
             <span>V1.1</span>
           </div>
 
           <div className="ai-tools-grid">
+
             <article className="ai-tool-card">
               <span>🎯</span>
-              <h3>تحليل الأهداف</h3>
+
+              <h3>
+                تحليل الأهداف
+              </h3>
+
               <p>
-                تحليل أهدافك وتحويلها إلى خطوات عملية.
+                تحليل أهدافك وتحويلها
+                إلى خطوات عملية.
               </p>
             </article>
 
             <article className="ai-tool-card">
               <span>✓</span>
-              <h3>تنظيم المهام</h3>
+
+              <h3>
+                تنظيم المهام
+              </h3>
+
               <p>
-                ترتيب المهام وتحديد الأولويات.
+                ترتيب المهام وتحديد
+                الأولويات.
               </p>
             </article>
 
             <article className="ai-tool-card">
               <span>🚀</span>
-              <h3>تحليل المشاريع</h3>
+
+              <h3>
+                تحليل المشاريع
+              </h3>
+
               <p>
-                فهم حالة المشروع وتحديد الخطوات القادمة.
+                فهم حالة المشروع
+                وتحديد الخطوات القادمة.
               </p>
             </article>
 
             <article className="ai-tool-card">
               <span>📋</span>
-              <h3>توليد خطة</h3>
+
+              <h3>
+                توليد خطة
+              </h3>
+
               <p>
-                إنشاء خطة عملية بناءً على هدفك.
+                إنشاء خطة عملية بناءً
+                على هدفك.
               </p>
             </article>
+
           </div>
+
         </section>
+
       </section>
     </main>
   );
-      }
+        }
