@@ -60,28 +60,160 @@ function createConversation(): Conversation {
   };
 }
 
-export default function AI() {
-  const [conversations, setConversations] = useState<
-    Conversation[]
-  >(() => {
-    try {
-      const saved = localStorage.getItem(
-        CONVERSATIONS_STORAGE_KEY
+function renderFormattedText(text: string) {
+  const lines = text.split('\n');
+  const elements: JSX.Element[] = [];
+
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      elements.push(
+        <div
+          key={`space-${index}`}
+          className="ai-text-space"
+        />
       );
 
-      if (!saved) {
+      return;
+    }
+
+    const isHeading =
+      /^\*\*.+\*\*$/.test(trimmedLine);
+
+    const isNumberedList =
+      /^\d+\.\s+/.test(trimmedLine);
+
+    const isBullet =
+      /^[-•*]\s+/.test(trimmedLine);
+
+    let cleanLine = trimmedLine;
+
+    if (isHeading) {
+      cleanLine = cleanLine.replace(
+        /^\*\*|\*\*$/g,
+        ''
+      );
+
+      elements.push(
+        <h3
+          key={index}
+          className="ai-response-heading"
+        >
+          {cleanLine}
+        </h3>
+      );
+
+      return;
+    }
+
+    if (isNumberedList) {
+      const match =
+        cleanLine.match(/^(\d+\.)\s+(.+)$/);
+
+      if (match) {
+        elements.push(
+          <div
+            key={index}
+            className="ai-response-list-item"
+          >
+            <span className="ai-response-number">
+              {match[1]}
+            </span>
+
+            <span>
+              {renderInlineFormatting(
+                match[2]
+              )}
+            </span>
+          </div>
+        );
+
+        return;
+      }
+    }
+
+    if (isBullet) {
+      cleanLine = cleanLine.replace(
+        /^[-•*]\s+/,
+        ''
+      );
+
+      elements.push(
+        <div
+          key={index}
+          className="ai-response-list-item"
+        >
+          <span className="ai-response-bullet">
+            •
+          </span>
+
+          <span>
+            {renderInlineFormatting(
+              cleanLine
+            )}
+          </span>
+        </div>
+      );
+
+      return;
+    }
+
+    elements.push(
+      <p
+        key={index}
+        className="ai-response-paragraph"
+      >
+        {renderInlineFormatting(cleanLine)}
+      </p>
+    );
+  });
+
+  return elements;
+}
+
+function renderInlineFormatting(text: string) {
+  const parts = text.split(
+    /(\*\*[^*]+\*\*)/g
+  );
+
+  return parts.map((part, index) => {
+    if (
+      part.startsWith('**') &&
+      part.endsWith('**')
+    ) {
+      return (
+        <strong key={index}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    return part;
+  });
+}
+
+export default function AI() {
+  const [conversations, setConversations] =
+    useState<Conversation[]>(() => {
+      try {
+        const saved = localStorage.getItem(
+          CONVERSATIONS_STORAGE_KEY
+        );
+
+        if (!saved) {
+          return [];
+        }
+
+        const parsed = JSON.parse(saved);
+
+        return Array.isArray(parsed)
+          ? parsed
+          : [];
+      } catch {
         return [];
       }
-
-      const parsed = JSON.parse(saved);
-
-      return Array.isArray(parsed)
-        ? parsed
-        : [];
-    } catch {
-      return [];
-    }
-  });
+    });
 
   const [activeConversationId, setActiveConversationId] =
     useState<number | null>(() => {
@@ -99,10 +231,12 @@ export default function AI() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const activeConversation = conversations.find(
-    (conversation) =>
-      conversation.id === activeConversationId
-  );
+  const activeConversation =
+    conversations.find(
+      (conversation) =>
+        conversation.id ===
+        activeConversationId
+    );
 
   const messages =
     activeConversation?.messages || [];
@@ -552,11 +686,20 @@ export default function AI() {
                             : 'M-Command AI'}
                         </strong>
 
-                        <p>
-                          {
-                            message.content
-                          }
-                        </p>
+                        {message.role ===
+                        'assistant' ? (
+                          <div className="ai-formatted-response">
+                            {renderFormattedText(
+                              message.content
+                            )}
+                          </div>
+                        ) : (
+                          <p>
+                            {
+                              message.content
+                            }
+                          </p>
+                        )}
                       </div>
                     )
                   )}
@@ -685,4 +828,4 @@ export default function AI() {
       </section>
     </main>
   );
-        }
+    }
