@@ -30,6 +30,12 @@ type Project = {
   status: 'قيد التنفيذ' | 'مكتمل' | 'متوقف';
 };
 
+type Note = {
+  id: number;
+  title: string;
+  content: string;
+};
+
 export default function AI() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -96,6 +102,26 @@ export default function AI() {
     }
   };
 
+  const getNotes = (): Note[] => {
+    try {
+      const savedNotes = localStorage.getItem(
+        'm-command-notes'
+      );
+
+      if (!savedNotes) {
+        return [];
+      }
+
+      const parsedNotes = JSON.parse(savedNotes);
+
+      return Array.isArray(parsedNotes)
+        ? parsedNotes
+        : [];
+    } catch {
+      return [];
+    }
+  };
+
   const sendMessage = async () => {
     const message = input.trim();
 
@@ -106,6 +132,7 @@ export default function AI() {
     const goals = getGoals();
     const tasks = getTasks();
     const projects = getProjects();
+    const notes = getNotes();
 
     setMessages((prev) => [
       ...prev,
@@ -129,6 +156,7 @@ export default function AI() {
           goals,
           tasks,
           projects,
+          notes,
         }),
       });
 
@@ -185,7 +213,7 @@ export default function AI() {
 
             <p>
               استخدم الذكاء الاصطناعي لتحليل أهدافك
-              ومهامك ومشاريعك وتنظيم عملك من مكان واحد.
+              ومهامك ومشاريعك وملاحظاتك وتنظيم عملك من مكان واحد.
             </p>
           </div>
 
@@ -216,7 +244,7 @@ export default function AI() {
 
                 <p>
                   ابدأ بسؤال عن أهدافك أو مهامك أو
-                  مشاريعك أو خطتك اليومية.
+                  مشاريعك أو ملاحظاتك أو خطتك اليومية.
                 </p>
               </>
             ) : (
@@ -322,4 +350,4 @@ export default function AI() {
       </section>
     </main>
   );
-    }
+          }
