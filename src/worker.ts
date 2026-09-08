@@ -86,7 +86,9 @@ function buildTasksContext(tasks: Task[]): string {
     .join('\n');
 }
 
-function buildProjectsContext(projects: Project[]): string {
+function buildProjectsContext(
+  projects: Project[]
+): string {
   if (projects.length === 0) {
     return 'لا توجد مشاريع.';
   }
@@ -152,7 +154,8 @@ const SYSTEM_PROMPT = `
 - عند سؤال المستخدم عن أهم 3 أشياء:
   1. استخدم الأولويات الصريحة أولًا.
   2. إذا وُجد عنصران مؤكدان فقط، اذكرهما فقط.
-  3. إذا لم توجد بيانات كافية للعنصر الثالث، قل: لا توجد بيانات كافية لتحديد أولوية ثالثة بدقة.
+  3. إذا لم توجد بيانات كافية للعنصر الثالث، قل:
+     لا توجد بيانات كافية لتحديد أولوية ثالثة بدقة.
   4. يمكن تقديم اقتراح منفصل، ويجب تسميته بوضوح "الاقتراح".
 - لا ترتب المشاريع أو الأهداف أو الملاحظات من عندك دون أساس كافٍ.
 
@@ -181,6 +184,8 @@ export default {
     request: Request,
     env: Env
   ): Promise<Response> {
+    const requestStart = performance.now();
+
     const url = new URL(request.url);
 
     if (url.pathname === '/api/health') {
@@ -196,8 +201,12 @@ export default {
       request.method === 'POST'
     ) {
       try {
+        const jsonStart = performance.now();
+
         const body =
           await request.json<AIRequestBody>();
+
+        const jsonEnd = performance.now();
 
         const message = body.message?.trim();
 
@@ -239,6 +248,8 @@ export default {
               .slice(-6)
           : [];
 
+        const contextStart = performance.now();
+
         const dataContext = `
 بيانات المستخدم الحالية:
 
@@ -268,6 +279,30 @@ ${buildNotesContext(notes)}
           },
         ];
 
+        const contextEnd = performance.now();
+
+        const beforeAIRun = performance.now();
+
+        console.log(
+          JSON.stringify({
+            event: 'AI_TIMING_START',
+            request_ms: Math.round(
+              beforeAIRun - requestStart
+            ),
+            json_ms: Math.round(
+              jsonEnd - jsonStart
+            ),
+            context_ms: Math.round(
+              contextEnd - contextStart
+            ),
+            history_messages: history.length,
+            goals: goals.length,
+            tasks: tasks.length,
+            projects: projects.length,
+            notes: notes.length,
+          })
+        );
+
         const aiStream = await env.AI.run(
           '@cf/zai-org/glm-4.7-flash',
           {
@@ -276,15 +311,55 @@ ${buildNotesContext(notes)}
           }
         );
 
+        const afterAIRun = performance.now();
+
+        const aiRunWaitMs =
+          afterAIRun - beforeAIRun;
+
+        const totalBeforeStreamMs =
+          afterAIRun - requestStart;
+
+        console.log(
+          JSON.stringify({
+            event: 'AI_TIMING_READY',
+            ai_run_wait_ms: Math.round(
+              aiRunWaitMs
+            ),
+            total_before_stream_ms: Math.round(
+              totalBeforeStreamMs
+            ),
+          })
+        );
+
         return new Response(
           aiStream as ReadableStream,
           {
             headers: {
               'Content-Type':
                 'text/event-stream; charset=utf-8',
+
               'Cache-Control':
                 'no-cache, no-transform',
-              'X-Accel-Buffering': 'no',
+
+              'X-Accel-Buffering':
+                'no',
+
+              'X-AI-Run-Wait-Ms':
+                String(Math.round(aiRunWaitMs)),
+
+              'X-Total-Before-Stream-Ms':
+                String(
+                  Math.round(
+                    totalBeforeStreamMs
+                  )
+                ),
+
+              'X-Request-Preparation-Ms':
+                String(
+                  Math.round(
+                    beforeAIRun - requestStart
+                  )
+                ),
             },
           }
         );
