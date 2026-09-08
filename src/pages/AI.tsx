@@ -44,6 +44,11 @@ type Conversation = {
   updatedAt: number;
 };
 
+type Timing = {
+  firstResponse: number | null;
+  total: number | null;
+};
+
 const CONVERSATIONS_STORAGE_KEY =
   'm-command-ai-conversations';
 
@@ -256,6 +261,11 @@ export default function AI() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [timing, setTiming] = useState<Timing>({
+    firstResponse: null,
+    total: null,
+  });
+
   const activeConversation =
     conversations.find(
       (conversation) =>
@@ -398,6 +408,8 @@ export default function AI() {
 
     if (!message || loading) return;
 
+    const startTime = performance.now();
+
     let conversationId =
       activeConversationId;
 
@@ -453,6 +465,11 @@ export default function AI() {
     setInput('');
     setLoading(true);
 
+    setTiming({
+      firstResponse: null,
+      total: null,
+    });
+
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',
@@ -489,6 +506,7 @@ export default function AI() {
 
       let assistantText = '';
       let buffer = '';
+      let firstResponseRecorded = false;
 
       updateConversation(
         conversationId,
@@ -558,6 +576,20 @@ export default function AI() {
               continue;
             }
 
+            if (!firstResponseRecorded) {
+              const firstResponseTime =
+                performance.now() -
+                startTime;
+
+              setTiming((current) => ({
+                ...current,
+                firstResponse:
+                  firstResponseTime,
+              }));
+
+              firstResponseRecorded = true;
+            }
+
             assistantText += text;
 
             updateConversation(
@@ -599,6 +631,20 @@ export default function AI() {
               extractStreamText(parsed);
 
             if (text) {
+              if (!firstResponseRecorded) {
+                const firstResponseTime =
+                  performance.now() -
+                  startTime;
+
+                setTiming((current) => ({
+                  ...current,
+                  firstResponse:
+                    firstResponseTime,
+                }));
+
+                firstResponseRecorded = true;
+              }
+
               assistantText += text;
             }
           } catch {
@@ -616,6 +662,14 @@ export default function AI() {
         );
       }
 
+      const totalTime =
+        performance.now() - startTime;
+
+      setTiming((current) => ({
+        ...current,
+        total: totalTime,
+      }));
+
       updateConversation(
         conversationId!,
         [
@@ -627,6 +681,14 @@ export default function AI() {
         ]
       );
     } catch {
+      const totalTime =
+        performance.now() - startTime;
+
+      setTiming((current) => ({
+        ...current,
+        total: totalTime,
+      }));
+
       updateConversation(
         conversationId!,
         [
@@ -659,6 +721,11 @@ export default function AI() {
     );
 
     setInput('');
+
+    setTiming({
+      firstResponse: null,
+      total: null,
+    });
   };
 
   const selectConversation = (
@@ -878,6 +945,32 @@ export default function AI() {
                   : 'إرسال'}
               </button>
             </div>
+
+            {timing.total !== null && (
+              <div
+                style={{
+                  padding:
+                    '10px 16px',
+                  fontSize: '13px',
+                  opacity: 0.75,
+                  textAlign: 'center',
+                }}
+              >
+                ⚡ أول استجابة:{' '}
+                {timing.firstResponse !==
+                null
+                  ? `${(
+                      timing.firstResponse /
+                      1000
+                    ).toFixed(2)} ثانية`
+                  : 'غير متاح'}
+                {' · '}
+                ⏱️ الوقت الكلي:{' '}
+                {(
+                  timing.total / 1000
+                ).toFixed(2)} ثانية
+              </div>
+            )}
           </section>
         </section>
 
@@ -939,4 +1032,4 @@ export default function AI() {
       </section>
     </main>
   );
-                   }
+    }
